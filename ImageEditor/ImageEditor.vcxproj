@@ -25,8 +25,7 @@
     <WindowsTargetPlatformVersion Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">10.0.19041.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformVersion Condition="'$(Configuration)|$(Platform)' == 'Debug|Win32'">10.0.19041.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformVersion Condition="'$(Configuration)|$(Platform)' == 'Release|Win32'">10.0.19041.0</WindowsTargetPlatformVersion>
-    <QtMsBuild Condition="'$(QtMsBuild)'=='' OR !Exists('$(QtMsBuild)\qt.targets')"
-      >$(MSBuildProjectDirectory)\QtMsBuild</QtMsBuild>
+    <QtMsBuild Condition="'$(QtMsBuild)'=='' OR !Exists('$(QtMsBuild)\qt.targets')">$(MSBuildProjectDirectory)\QtMsBuild</QtMsBuild>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
@@ -69,11 +68,8 @@
     <QtModules>core;gui;widgets</QtModules>
     <QtBuildConfig>release</QtBuildConfig>
   </PropertyGroup>
-  <Target Name="QtMsBuildNotFound"
-    BeforeTargets="CustomBuild;ClCompile"
-    Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
-    <Message Importance="High"
-      Text="QtMsBuild: could not locate qt.targets, qt.props; project may not build correctly." />
+  <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
+    <Message Importance="High" Text="QtMsBuild: could not locate qt.targets, qt.props; project may not build correctly." />
   </Target>
   <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared" />
@@ -175,13 +171,17 @@
     </QtMoc>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <QtRcc Include="ImageEditor.qrc"/>
-    <QtUic Include="ImageEditor.ui"/>
-    <QtMoc Include="ImageEditor.h"/>
-    <ClCompile Include="ImageEditor.cpp"/>
-    <ClCompile Include="main.cpp"/>
+    <QtRcc Include="ImageEditor.qrc" />
+    <QtUic Include="ImageEditor.ui" />
+    <QtMoc Include="ImageEditor.h" />
+    <ClCompile Include="ActiveArea.cpp" />
+    <ClCompile Include="CentralWindow.cpp" />
+    <ClCompile Include="ImageEditor.cpp" />
+    <ClCompile Include="main.cpp" />
     <None Include="ImageEditor.ico" />
     <ResourceCompile Include="ImageEditor.rc" />
+    <QtMoc Include="ActiveArea.h" />
+    <QtMoc Include="CentralWindow.h" />
     <ClInclude Include="stdafx.h" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">Create</PrecompiledHeader>
