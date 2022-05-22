@@ -1,13 +1,13 @@
 #pragma once
-
 #include <QtWidgets>
-//#include "CentralWindow.h"
 
 class ImageEditor : public QMainWindow
 {
     Q_OBJECT
 private:
     QString supportedExtensions;
+    QLabel* mousePosition;
+
 public:
     ImageEditor(QWidget *parent = Q_NULLPTR);
 
@@ -18,7 +18,7 @@ signals:
 public slots:
     void slotSave();
     void slotOpen();
+    void slotAbout();
+    void slotMouseMoved(QPoint mousePosition);
 
-private:
-    void setUpMenus();
 };

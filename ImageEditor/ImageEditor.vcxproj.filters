@@ -21,6 +21,9 @@
       <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
       <Extensions>ts</Extensions>
     </Filter>
+    <Filter Include="Instruments">
+      <UniqueIdentifier>{04311585-321c-41f6-997e-95df3e2a049f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="ImageEditor.qrc">
@@ -58,6 +61,12 @@
     <ClCompile Include="CentralWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Pencil.cpp">
+      <Filter>Instruments</Filter>
+    </ClCompile>
+    <ClCompile Include="InstrumentBase.cpp">
+      <Filter>Instruments</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="ActiveArea.h">
@@ -66,5 +75,13 @@
     <QtMoc Include="CentralWindow.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="InstrumentBase.h">
+      <Filter>Instruments</Filter>
+    </ClInclude>
+    <ClInclude Include="Pencil.h">
+      <Filter>Instruments</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

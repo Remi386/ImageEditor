@@ -1,27 +1,50 @@
 #include "ActiveArea.h"
+#include <stdexcept>
 
-ActiveArea::ActiveArea(QWidget* parent /* = Q_NULLPTR*/)
-    :QWidget(parent)
+ActiveArea::ActiveArea(QHash<QString, int>& args, QWidget* parent /* = Q_NULLPTR*/)
+    :arguments(args), QWidget(parent)
 {
     image.load("TestImage.jpg");
     resize(image.size());
     setAttribute(Qt::WA_StaticContents);
+    setMouseTracking(true);
 }
 
-//void ActiveArea::mousePressEvent(QMouseEvent* me)
-//{
-//    
-//}
-//
-//void ActiveArea::mouseMoveEvent(QMouseEvent* me) 
-//{
-//
-//}
-//
-//void ActiveArea::mouseReleaseEvent(QMouseEvent* me)
-//{
-//
-//}
+void ActiveArea::mousePressEvent(QMouseEvent* me)
+{
+    arguments["prevX"] = me->x();
+    arguments["prevY"] = me->y();
+
+    arguments["X"] = me->x();
+    arguments["Y"] = me->y();
+
+    emit signalMousePressed();
+
+    QWidget::mousePressEvent(me);
+}
+
+void ActiveArea::mouseMoveEvent(QMouseEvent* me)
+{
+    arguments["prevX"] = arguments["X"];
+    arguments["prevY"] = arguments["Y"];
+
+    arguments["X"] = me->x();
+    arguments["Y"] = me->y();
+
+    emit signalMouseMoved(me->pos());
+
+    QWidget::mouseMoveEvent(me);
+}
+
+void ActiveArea::mouseReleaseEvent(QMouseEvent* me)
+{
+    arguments["X"] = me->x();
+    arguments["Y"] = me->y();
+
+    emit signalMouseReleased();
+
+    QWidget::mouseReleaseEvent(me);
+}
 
 void ActiveArea::paintEvent(QPaintEvent* pe)
 {
@@ -56,11 +79,6 @@ void ActiveArea::resizeImage(QImage* image, const QSize& newSize)
     *image = newImage;
 }
 
-void ActiveArea::slotColorChanged(QColor& col)
-{
-    activeColor = col;
-}
-
 bool ActiveArea::SaveAs(const QString& fileName, const QString& extension)
 {
     return image.save(fileName + "." + extension, extension.toLatin1().constData());
@@ -69,4 +87,17 @@ bool ActiveArea::SaveAs(const QString& fileName, const QString& extension)
 bool ActiveArea::Open(const QString& fileName)
 {
     return image.load(fileName);
+}
+
+bool ActiveArea::Draw(Instrument* instr, OperationType operType)
+{
+    try {
+        instr->DoOperation(image, arguments, operType);
+    }
+    catch (std::exception& ex) {
+        QMessageBox::information(this, "Unable to perform an operation",
+                                 ex.what());
+    }
+    update();
+    return true;
 }

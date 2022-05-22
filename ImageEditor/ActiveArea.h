@@ -1,28 +1,32 @@
 #pragma once
 #include <QtWidgets>
+#include "Pencil.h"
 
 class ActiveArea : public QWidget {
 	Q_OBJECT
 public:
-	ActiveArea(QWidget* parent = Q_NULLPTR);
+	ActiveArea(QHash<QString, int>& arguments, QWidget* parent = Q_NULLPTR);
 
 	bool SaveAs(const QString& fileName, const QString& extension);
 
 	bool Open(const QString& fileName);
 
-private:
-	//QWidget* area;
-	QImage image;
-	QColor activeColor = Qt::black;
-	QString fileName;
+	bool Draw(Instrument* instr, OperationType operType);
 
-public slots:
-	void slotColorChanged(QColor& color);
+private:
+	QImage image;
+	QString fileName;
+	QHash<QString, int>& arguments;
+
+signals:
+	void signalMousePressed();
+	void signalMouseMoved(QPoint mousePosition);
+	void signalMouseReleased();
 
 protected:
-	//void mousePressEvent(QMouseEvent* me) override;
-	//void mouseMoveEvent(QMouseEvent* me) override;
-	//void mouseReleaseEvent(QMouseEvent* me) override;
+	void mousePressEvent(QMouseEvent* me) override;
+	void mouseMoveEvent(QMouseEvent* me) override;
+	void mouseReleaseEvent(QMouseEvent* me) override;
 
 	void paintEvent(QPaintEvent* pe) override;
 	void resizeEvent(QResizeEvent* event) override;
