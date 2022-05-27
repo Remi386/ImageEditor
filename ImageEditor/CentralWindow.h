@@ -1,7 +1,6 @@
 #pragma once
 #include <QtWidgets>
 #include "ActiveArea.h"
-#include "Pencil.h"
 
 class CentralWindow : public QWidget
 {

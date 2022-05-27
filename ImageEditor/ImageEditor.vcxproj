@@ -195,18 +195,37 @@
     <QtUic Include="ImageEditor.ui" />
     <QtMoc Include="ImageEditor.h" />
     <ClCompile Include="ActiveArea.cpp" />
+    <ClCompile Include="Brush.cpp" />
     <ClCompile Include="CentralWindow.cpp" />
+    <ClCompile Include="Dropper.cpp" />
+    <ClCompile Include="Eraser.cpp" />
     <ClCompile Include="ImageEditor.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Line.cpp" />
+    <ClCompile Include="main.cpp">
+      <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">input</DynamicSource>
+      <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename).moc</QtMocFileName>
+      <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">input</DynamicSource>
+      <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).moc</QtMocFileName>
+      <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">input</DynamicSource>
+      <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename).moc</QtMocFileName>
+      <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Release|x64'">input</DynamicSource>
+      <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename).moc</QtMocFileName>
+    </ClCompile>
     <None Include="ImageEditor.ico" />
     <ResourceCompile Include="ImageEditor.rc" />
     <QtMoc Include="ActiveArea.h" />
     <QtMoc Include="CentralWindow.h" />
+    <ClInclude Include="Brush.h" />
+    <ClInclude Include="Dropper.h" />
+    <ClInclude Include="Eraser.h" />
     <ClInclude Include="InstrumentBase.h" />
+    <ClInclude Include="Line.h" />
     <ClInclude Include="Pencil.h" />
+    <ClInclude Include="Spray.h" />
     <ClInclude Include="stdafx.h" />
     <ClCompile Include="InstrumentBase.cpp" />
     <ClCompile Include="Pencil.cpp" />
+    <ClCompile Include="Spray.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">Create</PrecompiledHeader>

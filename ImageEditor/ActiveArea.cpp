@@ -46,8 +46,18 @@ void ActiveArea::mouseReleaseEvent(QMouseEvent* me)
     QWidget::mouseReleaseEvent(me);
 }
 
+void ActiveArea::wheelEvent(QWheelEvent* we)
+{
+    if (QGuiApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
+        //resize(size() * (1.0 + we->angleDelta().y() / 120. / 12.));
+    }
+    
+    QWidget::wheelEvent(we);
+}
+
 void ActiveArea::paintEvent(QPaintEvent* pe)
 {
+    //resize(size() * zoomScale);
     QPainter painter(this);
     QRect rec = pe->rect();
     painter.drawImage(rec, image, rec);
@@ -55,29 +65,29 @@ void ActiveArea::paintEvent(QPaintEvent* pe)
     QWidget::paintEvent(pe);
 }
 
-void ActiveArea::resizeEvent(QResizeEvent* event)
-{
-    if (width() > image.width() || height() > image.height()) {
-        int newWidth = qMax(width() + 128, image.width());
-        int newHeight = qMax(height() + 128, image.height());
-        resizeImage(&image, QSize(newWidth, newHeight));
-        update();
-    }
+//void ActiveArea::resizeEvent(QResizeEvent* event)
+//{
+//    if (width() > image.width() || height() > image.height()) {
+//        int newWidth = qMax(width() + 128, image.width());
+//        int newHeight = qMax(height() + 128, image.height());
+//        resizeImage(&image, QSize(newWidth, newHeight));
+//        update();
+//    }
+//
+//    QWidget::resizeEvent(event);
+//}
 
-    QWidget::resizeEvent(event);
-}
-
-void ActiveArea::resizeImage(QImage* image, const QSize& newSize)
-{
-    if (image->size() == newSize)
-        return;
-
-    QImage newImage(newSize, QImage::Format_RGB32);
-    newImage.fill(qRgb(255, 255, 255));
-    QPainter painter(&newImage);
-    painter.drawImage(QPoint(0, 0), *image);
-    *image = newImage;
-}
+//void ActiveArea::resizeImage(QImage* image, const QSize& newSize)
+//{
+//    if (image->size() == newSize)
+//        return;
+//
+//    QImage newImage(newSize, QImage::Format_RGB32);
+//    newImage.fill(qRgb(255, 255, 255));
+//    QPainter painter(&newImage);
+//    painter.drawImage(QPoint(0, 0), *image);
+//    *image = newImage;
+//}
 
 bool ActiveArea::SaveAs(const QString& fileName, const QString& extension)
 {
@@ -101,3 +111,4 @@ bool ActiveArea::Draw(Instrument* instr, OperationType operType)
     update();
     return true;
 }
+

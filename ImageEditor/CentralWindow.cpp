@@ -1,5 +1,11 @@
 #include "CentralWindow.h"
 #include "ActiveArea.h"
+#include "Pencil.h"
+#include "Brush.h"
+#include "Eraser.h"
+#include "Spray.h"
+#include "Line.h"
+#include "Dropper.h"
 
 CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/) 
 	:QWidget(parent), area(new ActiveArea(arguments)), 
@@ -127,7 +133,13 @@ void CentralWindow::connectSignals()
 	Q_ASSERT(con);
 
 	bool actB = true;
-	actB &= (bool)connect(choosePen, &QAction::triggered, this, []() {});
+	actB &= (bool)connect(choosePen, &QAction::triggered, this, [this]() {changeInstrument(new Pencil); });
+	actB &= (bool)connect(chooseBrush, &QAction::triggered, this, [this]() {changeInstrument(new Brush); });
+	actB &= (bool)connect(chooseEraser, &QAction::triggered, this, [this]() {changeInstrument(new Eraser); });
+	actB &= (bool)connect(chooseSpray, &QAction::triggered, this, [this]() {changeInstrument(new Spray); });
+	actB &= (bool)connect(chooseLine, &QAction::triggered, this, [this]() {changeInstrument(new Line); });
+	actB &= (bool)connect(chooseDropper, &QAction::triggered, this, [this]() {changeInstrument(new Dropper); });
+
 	actB &= (bool)connect(chooseColor, &QAction::triggered, this, [this]() {
 		slotColorChanged(QColorDialog::getColor());
 		});

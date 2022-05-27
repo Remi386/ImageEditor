@@ -52,9 +52,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ActiveArea.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,6 +63,24 @@
     </ClCompile>
     <ClCompile Include="InstrumentBase.cpp">
       <Filter>Instruments</Filter>
+    </ClCompile>
+    <ClCompile Include="Spray.cpp">
+      <Filter>Instruments</Filter>
+    </ClCompile>
+    <ClCompile Include="Eraser.cpp">
+      <Filter>Instruments</Filter>
+    </ClCompile>
+    <ClCompile Include="Brush.cpp">
+      <Filter>Instruments</Filter>
+    </ClCompile>
+    <ClCompile Include="Line.cpp">
+      <Filter>Instruments</Filter>
+    </ClCompile>
+    <ClCompile Include="Dropper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +97,21 @@
     </ClInclude>
     <ClInclude Include="Pencil.h">
       <Filter>Instruments</Filter>
+    </ClInclude>
+    <ClInclude Include="Spray.h">
+      <Filter>Instruments</Filter>
+    </ClInclude>
+    <ClInclude Include="Brush.h">
+      <Filter>Instruments</Filter>
+    </ClInclude>
+    <ClInclude Include="Eraser.h">
+      <Filter>Instruments</Filter>
+    </ClInclude>
+    <ClInclude Include="Line.h">
+      <Filter>Instruments</Filter>
+    </ClInclude>
+    <ClInclude Include="Dropper.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
