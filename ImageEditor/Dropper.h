@@ -5,6 +5,6 @@ class Dropper : public Instrument {
 public:
 	virtual ~Dropper() = default;
 
-	virtual bool DoOperation(QImage& image, QHash<QString, int>& arguments,
-		OperationType operType) override;
+	virtual OpStatus DoOperation(QImage& image, QHash<QString, int>& arguments,
+								 OperationType operType) override;
 };

@@ -6,6 +6,6 @@ class Pencil : public Instrument {
 public:
 	virtual ~Pencil() = default;
 
-	virtual bool DoOperation(QImage& image, QHash<QString, int>& arguments, 
-							 OperationType operType) override;
+	virtual OpStatus DoOperation(QImage& image, QHash<QString, int>& arguments,
+							     OperationType operType) override;
 };

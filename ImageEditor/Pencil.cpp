@@ -4,7 +4,7 @@
 #include <QString>
 #include <QPainter>
 
-bool Pencil::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
+OpStatus Pencil::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
 {
 	QPainter painter(&image);
 	
@@ -19,5 +19,9 @@ bool Pencil::DoOperation(QImage& image, QHash<QString, int>& arguments, Operatio
 	painter.setPen(pen);
 
 	painter.drawLine(prevPos, curPos);
-	return true;
+
+	if (operType == OperationType::Release)
+		return OpStatus::Done;
+
+	return OpStatus::InProgress;
 }

@@ -1,6 +1,8 @@
 #pragma once
 #include <QtWidgets>
 #include "InstrumentBase.h"
+#include <array>
+#include "HistoryBuffer.h"
 
 class ActiveArea : public QWidget {
 	Q_OBJECT
@@ -13,26 +15,35 @@ public:
 
 	bool Draw(Instrument* instr, OperationType operType);
 
-	//void ZoomIn(double scale);
+	bool Undo();
 
+	bool Redo();
+
+	//double getScaleFactor() { return scaleFactor; }
+	//void ZoomIn(double scale);
 	//void ZoomOut(double scale);
 
 private:
 	QImage image;
 	QString fileName;
 	QHash<QString, int>& arguments;
-	double zoomScale = 1.0;
+	HistoryBuffer historyBuffer;
+	size_t currentHistoryIndex = 0;
+	//double scaleFactor = 1.0;
 
 signals:
 	void signalMousePressed();
 	void signalMouseMoved(QPoint mousePosition);
 	void signalMouseReleased();
+	void signalRedoStatusChanged(bool status);
+	void signalUndoStatusChanged(bool status);
+	//void signalScaleFactorChanged(double scaleFactor);
 
 protected:
 	void mousePressEvent(QMouseEvent* me) override;
 	void mouseMoveEvent(QMouseEvent* me) override;
 	void mouseReleaseEvent(QMouseEvent* me) override;
-	void wheelEvent(QWheelEvent* we) override;
+	//void wheelEvent(QWheelEvent* we) override;
 
 	void paintEvent(QPaintEvent* pe) override;
 	//void resizeEvent(QResizeEvent* event) override;

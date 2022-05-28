@@ -4,7 +4,7 @@
 #include <QHash>
 #include <QString>
 
-bool Dropper::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
+OpStatus Dropper::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
 {
 	auto [_, curPos, __, ___] = getParameters(arguments);
 	
@@ -12,5 +12,5 @@ bool Dropper::DoOperation(QImage& image, QHash<QString, int>& arguments, Operati
 	
 	color.getRgb(&arguments["red"], &arguments["green"], &arguments["blue"]);
 
-	return true;
+	return OpStatus::ColorChanged;
 }

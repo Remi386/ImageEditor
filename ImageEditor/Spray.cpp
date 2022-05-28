@@ -12,7 +12,7 @@ namespace {
 
 constexpr int pointsCount = 40;
 
-bool Spray::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
+OpStatus Spray::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
 {
 	QPainter painter(&image);
 
@@ -36,5 +36,8 @@ bool Spray::DoOperation(QImage& image, QHash<QString, int>& arguments, Operation
 		painter.drawPoint(QPoint(x, y));
 	}
 
-	return true;
+	if (operType == OperationType::Release)
+		return OpStatus::Done;
+
+	return OpStatus::InProgress;
 }

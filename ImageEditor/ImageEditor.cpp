@@ -6,16 +6,19 @@ ImageEditor::ImageEditor(QWidget *parent)
 {
     QMenu* fileMenu = menuBar()->addMenu("&File");
 
+    bool openActs = true;
     QAction* open = new QAction("&Open file");
     open->setShortcut(Qt::CTRL + Qt::Key_A);
-    connect(open, SIGNAL(triggered()), this, SLOT(slotOpen()));
+    openActs &= (bool)connect(open, &QAction::triggered, this, &ImageEditor::slotOpen);
     
     QAction* save = new QAction("&Save");
     save->setShortcut(Qt::CTRL + Qt::Key_S);
-    connect(save, SIGNAL(triggered()), this, SLOT(slotSave()));
+    openActs &= (bool)connect(save, &QAction::triggered, this, &ImageEditor::slotSave);
 
     QAction* about = new QAction("&About ImageEditor");
-    connect(about, SIGNAL(triggered()), this, SLOT(slotAbout()));
+    openActs &= (bool)connect(about, &QAction::triggered, this, &ImageEditor::slotAbout);
+
+    Q_ASSERT(openActs);
 
     fileMenu->addAction(open);
     fileMenu->addSeparator();
@@ -25,21 +28,51 @@ ImageEditor::ImageEditor(QWidget *parent)
     fileMenu->addSeparator();
     fileMenu->addAction("&Exit", qApp, SLOT(quit()));
     
+    QMenu* editMenu = menuBar()->addMenu("&Edit");
+    bool editActs = true;
+
+    undo = new QAction("&Undo");
+    undo->setShortcut(Qt::CTRL + Qt::Key_Z);
+    editActs &= (bool)connect(undo, &QAction::triggered, this, &ImageEditor::signalUndo);
+    undo->setEnabled(false);
+
+    redo = new QAction("&Redo");
+    redo->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z);
+    editActs &= (bool)connect(redo, &QAction::triggered, this, &ImageEditor::signalRedo);
+    redo->setEnabled(false);
+
+    Q_ASSERT(editActs);
+
+    editMenu->addAction(undo);
+    fileMenu->addSeparator();
+    editMenu->addAction(redo);
+    
     CentralWindow* centralWindow = new CentralWindow;
     
-    bool bOk = true;
+    bool centWind = true;
 
-    bOk &= (bool)connect(this, &ImageEditor::signalOpen,
-                         centralWindow, &CentralWindow::slotOpenFile);
+    centWind &= (bool)connect(this, &ImageEditor::signalOpen,
+                              centralWindow, &CentralWindow::slotOpenFile);
 
-    bOk &= (bool)connect(this, &ImageEditor::signalSave,
-                         centralWindow, &CentralWindow::slotSaveAs);
+    centWind &= (bool)connect(this, &ImageEditor::signalSave,
+                              centralWindow, &CentralWindow::slotSaveAs);
 
-    bOk &= (bool)connect(centralWindow, &CentralWindow::signalMouseMoved,
-                         this, &ImageEditor::slotMouseMoved);
+    centWind &= (bool)connect(centralWindow, &CentralWindow::signalMouseMoved,
+                              this, &ImageEditor::slotMouseMoved);
 
+    centWind &= (bool)connect(this, &ImageEditor::signalUndo,
+                              centralWindow, &CentralWindow::slotUndo);
 
-    Q_ASSERT(bOk);
+    centWind &= (bool)connect(this, &ImageEditor::signalRedo,
+                              centralWindow, &CentralWindow::slotRedo);
+
+    centWind &= (bool)connect(centralWindow, &CentralWindow::signalRedoStatus, 
+                              this, &ImageEditor::slotStatusRedoChanged);
+
+    centWind &= (bool)connect(centralWindow, &CentralWindow::signalUndoStatus,
+                              this, &ImageEditor::slotStatusUndoChanged);
+
+    Q_ASSERT(centWind);
 
     setCentralWidget(centralWindow);
     
@@ -57,7 +90,6 @@ ImageEditor::ImageEditor(QWidget *parent)
 
         supportedExtensions += QString::fromLatin1(format);
     };
-   
     
     resize(500, 400);
 }
@@ -97,4 +129,14 @@ void ImageEditor::slotAbout()
         "title = \" Icon Pack: Photo editing | Lineal color\">Photo editing icons "
         "created by Freepik - Flaticon</a>"
     );
+}
+
+void ImageEditor::slotStatusUndoChanged(bool status)
+{
+    undo->setEnabled(status);
+}
+
+void ImageEditor::slotStatusRedoChanged(bool status)
+{
+    redo->setEnabled(status);
 }

@@ -3,7 +3,7 @@
 #include <QString>
 #include <QPainter>
 
-bool Line::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
+OpStatus Line::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
 {
 
 	auto [_, curPos, color, penWidth] = getParameters(arguments);
@@ -11,6 +11,7 @@ bool Line::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationT
 	if (operType == OperationType::Press) {
 		prevMousePosition = curPos;
 		imageCopy = image;
+		return OpStatus::InProgress;
 	}
 
 	image = imageCopy;
@@ -28,5 +29,8 @@ bool Line::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationT
 
 	painter.drawLine(prevMousePosition, curPos);
 
-	return true;
+	if (operType == OperationType::Release)
+		return OpStatus::Done;
+
+	return OpStatus::InProgress;
 }

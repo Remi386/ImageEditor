@@ -14,9 +14,13 @@ private:
 	void connectSignals();
 	void createActions();
 	void changeInstrument(Instrument* newInst);
+	ActiveArea* GetActiveArea();
+	//void scaleScrollBar(QScrollBar* scrollBar, double scaleFactor);
 
 signals:
 	void signalMouseMoved(QPoint mousePosition);
+	void signalUndoStatus(bool status);
+	void signalRedoStatus(bool status);
 
 public slots:
 	void slotMousePressed();
@@ -29,8 +33,14 @@ public slots:
 	void slotColorChanged(const QColor& newColor);
 	void slotPenSizeChanged(int newSize);
 
+	void slotUndo();
+	void slotRedo();
+
+	//void slotScaleFactorChanged(double scaleFactor);
+
 private:
-	ActiveArea* area;
+	QScrollArea* activeArea;
+
 	Instrument* currentInstrument;
 
 	QHash<QString, int> arguments;

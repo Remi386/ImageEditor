@@ -5,7 +5,7 @@
 #include <QString>
 #include <QPainter>
 
-bool Eraser::DoOperation(QImage& image, QHash<QString, int>& arguments,	OperationType operType)
+OpStatus Eraser::DoOperation(QImage& image, QHash<QString, int>& arguments,	OperationType operType)
 {
 	QPainter painter(&image);
 
@@ -16,5 +16,8 @@ bool Eraser::DoOperation(QImage& image, QHash<QString, int>& arguments,	Operatio
 	QRect rect = QRect(curPos.x() - penWidth / 2, curPos.y() - penWidth / 2, penWidth, penWidth);
 	painter.drawRect(rect);
 
-	return true;
+	if (operType == OperationType::Release)
+		return OpStatus::Done;
+
+	return OpStatus::InProgress;
 }

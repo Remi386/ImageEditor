@@ -8,11 +8,10 @@
 #include "Dropper.h"
 
 CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/) 
-	:QWidget(parent), area(new ActiveArea(arguments)), 
+	:QWidget(parent), activeArea(new QScrollArea),
 	currentInstrument(new Pencil)//Pencil by default
 {
 	createActions();
-	connectSignals();
 
 	QHBoxLayout* hLayout = new QHBoxLayout;
 	hLayout->setContentsMargins(1, 1, 1, 1);
@@ -65,26 +64,19 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 	rigthBar->addWidget(penWidthSlider);
 	rigthBar->addWidget(penSizeDisplay);
 
-	/*
-	firstColor = new QPushButton("Color 1");
-	//firstColor->setColo
-	QPalette pal;
-
-	secondColor = new QPushButton("Color 2");
-
-	rigthBar->addWidget(firstColor);
-	rigthBar->addWidget(secondColor);
-	*/
 	hLayout->addWidget(rigthBar);
 
-	QScrollArea* scrArea = new QScrollArea;
-	scrArea->setWidget(area);
-	scrArea->setAlignment(Qt::AlignCenter);
+	ActiveArea* area = new ActiveArea(arguments);
 
-	hLayout->addWidget(scrArea);
+	activeArea->setWidget(area);
+	activeArea->setAlignment(Qt::AlignCenter);
+
+	hLayout->addWidget(activeArea);
 
 	arguments["penSize"] = penSize;
 	activeColor.getRgb(&arguments["red"], &arguments["green"], &arguments["blue"]);
+
+	connectSignals();
 
 	setLayout(hLayout);
 }
@@ -126,31 +118,56 @@ void CentralWindow::createActions()
 
 void CentralWindow::connectSignals()
 {
-	bool con = true;
-	con &= (bool)connect(area, &ActiveArea::signalMousePressed, this, &CentralWindow::slotMousePressed);
-	con &= (bool)connect(area, &ActiveArea::signalMouseMoved, this, &CentralWindow::slotMouseMoved);
-	con &= (bool)connect(area, &ActiveArea::signalMouseReleased, this, &CentralWindow::slotMouseReleased);
-	Q_ASSERT(con);
+	ActiveArea* area = GetActiveArea();
+
+	bool areaCon = true;
+
+	areaCon &= (bool)connect(area, &ActiveArea::signalMousePressed,
+							 this, &CentralWindow::slotMousePressed);
+
+	areaCon &= (bool)connect(area, &ActiveArea::signalMouseMoved,
+							 this, &CentralWindow::slotMouseMoved);
+
+	areaCon &= (bool)connect(area, &ActiveArea::signalMouseReleased,
+							 this, &CentralWindow::slotMouseReleased);
+
+	areaCon &= (bool)connect(area, &ActiveArea::signalRedoStatusChanged,
+							 this, &CentralWindow::signalRedoStatus);
+
+	areaCon &= (bool)connect(area, &ActiveArea::signalUndoStatusChanged,
+							 this, &CentralWindow::signalUndoStatus);
+
+	Q_ASSERT(areaCon);
 
 	bool actB = true;
-	actB &= (bool)connect(choosePen, &QAction::triggered, this, [this]() {changeInstrument(new Pencil); });
-	actB &= (bool)connect(chooseBrush, &QAction::triggered, this, [this]() {changeInstrument(new Brush); });
-	actB &= (bool)connect(chooseEraser, &QAction::triggered, this, [this]() {changeInstrument(new Eraser); });
-	actB &= (bool)connect(chooseSpray, &QAction::triggered, this, [this]() {changeInstrument(new Spray); });
-	actB &= (bool)connect(chooseLine, &QAction::triggered, this, [this]() {changeInstrument(new Line); });
-	actB &= (bool)connect(chooseDropper, &QAction::triggered, this, [this]() {changeInstrument(new Dropper); });
+	actB &= (bool)connect(choosePen, &QAction::triggered, 
+						  this, [this]() {changeInstrument(new Pencil); });
 
-	actB &= (bool)connect(chooseColor, &QAction::triggered, this, [this]() {
-		slotColorChanged(QColorDialog::getColor());
-		});
+	actB &= (bool)connect(chooseBrush, &QAction::triggered, 
+						  this, [this]() {changeInstrument(new Brush); });
+	
+	actB &= (bool)connect(chooseEraser, &QAction::triggered, 
+						  this, [this]() {changeInstrument(new Eraser); });
+	
+	actB &= (bool)connect(chooseSpray, &QAction::triggered, 
+						  this, [this]() {changeInstrument(new Spray); });
+	
+	actB &= (bool)connect(chooseLine, &QAction::triggered, 
+						  this, [this]() {changeInstrument(new Line); });
+	
+	actB &= (bool)connect(chooseDropper, &QAction::triggered, 
+						  this, [this]() {changeInstrument(new Dropper); });
+
+	actB &= (bool)connect(chooseColor, &QAction::triggered, 
+						  this, [this]() { slotColorChanged(QColorDialog::getColor()); });
 
 	Q_ASSERT(actB);
 }
 
 void CentralWindow::slotSaveAs(const QString& fileName, const QString& extension)
 {
-	if (!area->SaveAs(fileName, extension)) {
-		QMessageBox::warning(this, 
+	if (!GetActiveArea()->SaveAs(fileName, extension)) {
+		QMessageBox::warning(this,
 			tr("Warning"), tr("Unable to save a file: ") + fileName + "." + extension
 		);
 	}
@@ -158,7 +175,7 @@ void CentralWindow::slotSaveAs(const QString& fileName, const QString& extension
 
 void CentralWindow::slotOpenFile(const QString& fileName)
 {
-	if (!area->Open(fileName)) {
+	if (!GetActiveArea()->Open(fileName)) {
 		QMessageBox::warning(this, tr("Warning"), tr("Unable to open a file: ") + fileName);
 	}
 }
@@ -166,7 +183,7 @@ void CentralWindow::slotOpenFile(const QString& fileName)
 void CentralWindow::slotMousePressed()
 {
 	isMousePressed = true;
-	area->Draw(currentInstrument, OperationType::Press);
+	GetActiveArea()->Draw(currentInstrument, OperationType::Press);
 }
 
 void CentralWindow::slotMouseMoved(QPoint pos)
@@ -174,14 +191,28 @@ void CentralWindow::slotMouseMoved(QPoint pos)
 	emit signalMouseMoved(pos);
 
 	if (isMousePressed)
-		area->Draw(currentInstrument, OperationType::Move);
+		GetActiveArea()->Draw(currentInstrument, OperationType::Move);
 }
 
 void CentralWindow::slotMouseReleased()
 {
 	isMousePressed = false;
-	area->Draw(currentInstrument, OperationType::Release);
+	GetActiveArea()->Draw(currentInstrument, OperationType::Release);
 }
+
+//void CentralWindow::slotScaleFactorChanged(double scaleFactor)
+//{
+//	ActiveArea* area = GetActiveArea();
+//	area->resize(area->size() * scaleFactor);
+//	scaleScrollBar(activeArea->horizontalScrollBar(), scaleFactor);
+//	scaleScrollBar(activeArea->verticalScrollBar(), scaleFactor);
+//}
+
+//void CentralWindow::scaleScrollBar(QScrollBar* scrollBar, double scaleFactor)
+//{
+//	scrollBar->setValue(int(scaleFactor * scrollBar->value()
+//		+ ((scaleFactor - 1) * scrollBar->pageStep() / 2)));
+//}
 
 void CentralWindow::slotColorChanged(const QColor& newColor)
 {
@@ -201,4 +232,25 @@ void CentralWindow::changeInstrument(Instrument* newInst)
 		delete currentInstrument;
 		currentInstrument = newInst;
 	}
+}
+
+ActiveArea* CentralWindow::GetActiveArea()
+{
+	return qobject_cast<ActiveArea*>(activeArea->widget());
+}
+
+void CentralWindow::slotUndo()
+{
+	if (!GetActiveArea()->Undo()) {
+		emit signalUndoStatus(false);
+	}
+	emit signalRedoStatus(true);
+}
+
+void CentralWindow::slotRedo()
+{
+	if (!GetActiveArea()->Redo()) {
+		emit signalRedoStatus(false);
+	}
+	emit signalUndoStatus(true);
 }

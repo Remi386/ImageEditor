@@ -5,7 +5,7 @@
 #include <QString>
 #include <QPainter>
 
-bool Brush::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
+OpStatus Brush::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
 {
 	QPainter painter(&image);
 
@@ -22,5 +22,9 @@ bool Brush::DoOperation(QImage& image, QHash<QString, int>& arguments, Operation
 	painter.setRenderHint(QPainter::Antialiasing);
 
 	painter.drawLine(prevPos, curPos);
-	return true;
+
+	if (operType == OperationType::Release)
+		return OpStatus::Done;
+
+	return OpStatus::InProgress;
 }

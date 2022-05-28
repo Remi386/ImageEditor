@@ -76,11 +76,14 @@
     <ClCompile Include="Line.cpp">
       <Filter>Instruments</Filter>
     </ClCompile>
-    <ClCompile Include="Dropper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HistoryBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Dropper.cpp">
+      <Filter>Instruments</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -110,8 +113,11 @@
     <ClInclude Include="Line.h">
       <Filter>Instruments</Filter>
     </ClInclude>
-    <ClInclude Include="Dropper.h">
+    <ClInclude Include="HistoryBuffer.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dropper.h">
+      <Filter>Instruments</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

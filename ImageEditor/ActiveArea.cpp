@@ -8,6 +8,8 @@ ActiveArea::ActiveArea(QHash<QString, int>& args, QWidget* parent /* = Q_NULLPTR
     resize(image.size());
     setAttribute(Qt::WA_StaticContents);
     setMouseTracking(true);
+
+    historyBuffer.addImage(image);
 }
 
 void ActiveArea::mousePressEvent(QMouseEvent* me)
@@ -46,20 +48,22 @@ void ActiveArea::mouseReleaseEvent(QMouseEvent* me)
     QWidget::mouseReleaseEvent(me);
 }
 
-void ActiveArea::wheelEvent(QWheelEvent* we)
-{
-    if (QGuiApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
-        //resize(size() * (1.0 + we->angleDelta().y() / 120. / 12.));
-    }
-    
-    QWidget::wheelEvent(we);
-}
+//void ActiveArea::wheelEvent(QWheelEvent* we)
+//{
+//    if (QGuiApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
+//        if (scaleFactor < 3.0 && scaleFactor > 0.33) {
+//            scaleFactor += we->angleDelta().y() / 120. / 12.;
+//            emit signalScaleFactorChanged(scaleFactor);
+//        }
+//    }
+//    QWidget::wheelEvent(we);
+//}
 
 void ActiveArea::paintEvent(QPaintEvent* pe)
 {
-    //resize(size() * zoomScale);
     QPainter painter(this);
     QRect rec = pe->rect();
+
     painter.drawImage(rec, image, rec);
 
     QWidget::paintEvent(pe);
@@ -67,13 +71,12 @@ void ActiveArea::paintEvent(QPaintEvent* pe)
 
 //void ActiveArea::resizeEvent(QResizeEvent* event)
 //{
-//    if (width() > image.width() || height() > image.height()) {
+//    /*if (width() > image.width() || height() > image.height()) {
 //        int newWidth = qMax(width() + 128, image.width());
 //        int newHeight = qMax(height() + 128, image.height());
 //        resizeImage(&image, QSize(newWidth, newHeight));
 //        update();
-//    }
-//
+//    }*/
 //    QWidget::resizeEvent(event);
 //}
 
@@ -96,19 +99,72 @@ bool ActiveArea::SaveAs(const QString& fileName, const QString& extension)
 
 bool ActiveArea::Open(const QString& fileName)
 {
-    return image.load(fileName);
+    if (image.load(fileName)) {
+        historyBuffer.clear();
+        historyBuffer.addImage(image);
+        emit signalRedoStatusChanged(false);
+        emit signalUndoStatusChanged(false);
+        resize(image.size());
+        return true;
+    }
+
+    return false;
 }
 
 bool ActiveArea::Draw(Instrument* instr, OperationType operType)
 {
+    OpStatus operStatus = OpStatus::InProgress;
+
     try {
-        instr->DoOperation(image, arguments, operType);
+        operStatus = instr->DoOperation(image, arguments, operType);
     }
     catch (std::exception& ex) {
         QMessageBox::information(this, "Unable to perform an operation",
                                  ex.what());
     }
+    
+    switch (operStatus) {
+    case OpStatus::Done:
+        historyBuffer.addImage(image);
+        emit signalRedoStatusChanged(false);
+        emit signalUndoStatusChanged(true);
+        break;
+
+    case OpStatus::ColorChanged:
+        //Should emit colorChanged signal
+        break;
+    default:
+        break;
+    }
+
     update();
     return true;
 }
 
+bool ActiveArea::Undo()
+{
+    QImage newImage;
+
+    bool statFlag = historyBuffer.getPrev(newImage);
+
+    if (!newImage.isNull()) {
+        image = newImage;
+        update();
+    }
+
+    return statFlag;
+}
+
+bool ActiveArea::Redo()
+{
+    QImage newImage;
+
+    bool statFlag = historyBuffer.getNext(newImage);
+
+    if (!newImage.isNull()) {
+        image = newImage;
+        update();
+    }
+
+    return statFlag;
+}
