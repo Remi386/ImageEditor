@@ -2,7 +2,7 @@
 #include <QImage>
 #include <utility>
 
-constexpr int MaxBufferSize = 15;
+constexpr int MaxBufferSize = 16;
 
 HistoryBuffer::HistoryBuffer()
 {
@@ -12,7 +12,7 @@ HistoryBuffer::HistoryBuffer()
 
 bool HistoryBuffer::getNext(QImage& imageCopyTo)
 {
-	if (index < MaxBufferSize - 2) {
+	if (index <= MaxBufferSize - 2) {
 		imageCopyTo = buffer[++index];
 	}
 
@@ -30,18 +30,16 @@ bool HistoryBuffer::getPrev(QImage& imageCopyTo)
 
 bool HistoryBuffer::addImage(const QImage& img)
 {
-	bool returnFlag = true;
-
 	if (index == (MaxBufferSize - 1)) {
 		buffer.pop_front();
-		--index;
-		returnFlag = false;
+		buffer.append(img);
+		return false;
 	}
 	
 	buffer[++index] = img;
-
-	imagesCount = qMin(imagesCount + 1, MaxBufferSize);
-	return returnFlag;
+	
+	imagesCount = qMin(index + 1, MaxBufferSize);
+	return true;
 }
 
 void HistoryBuffer::clear()

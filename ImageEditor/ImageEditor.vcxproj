@@ -197,6 +197,7 @@
     <ClCompile Include="ActiveArea.cpp" />
     <ClCompile Include="Brush.cpp" />
     <ClCompile Include="CentralWindow.cpp" />
+    <ClCompile Include="ColorWidget.cpp" />
     <ClCompile Include="Dropper.cpp" />
     <ClCompile Include="Eraser.cpp" />
     <ClCompile Include="HistoryBuffer.cpp" />
@@ -217,6 +218,7 @@
     <QtMoc Include="ActiveArea.h" />
     <QtMoc Include="CentralWindow.h" />
     <ClInclude Include="Brush.h" />
+    <QtMoc Include="ColorWidget.h" />
     <ClInclude Include="Dropper.h" />
     <ClInclude Include="Eraser.h" />
     <ClInclude Include="HistoryBuffer.h" />

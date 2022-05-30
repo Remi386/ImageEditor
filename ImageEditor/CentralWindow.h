@@ -1,6 +1,7 @@
 #pragma once
 #include <QtWidgets>
 #include "ActiveArea.h"
+#include "ColorWidget.h"
 
 class CentralWindow : public QWidget
 {
@@ -21,6 +22,7 @@ signals:
 	void signalMouseMoved(QPoint mousePosition);
 	void signalUndoStatus(bool status);
 	void signalRedoStatus(bool status);
+	void signalColorChanged(QColor newColor);
 
 public slots:
 	void slotMousePressed();
@@ -60,4 +62,6 @@ private:
 	QAction* chooseLine;
 	QAction* chooseColor;
 
+	ColorWidget* color1;
+	ColorWidget* color2;
 };

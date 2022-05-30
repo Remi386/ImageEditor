@@ -37,6 +37,7 @@ signals:
 	void signalMouseReleased();
 	void signalRedoStatusChanged(bool status);
 	void signalUndoStatusChanged(bool status);
+	void signalColorChanged(const QColor& newColor);
 	//void signalScaleFactorChanged(double scaleFactor);
 
 protected:

@@ -17,34 +17,34 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 	hLayout->setContentsMargins(1, 1, 1, 1);
 
 	//tool bar
-	QToolBar* rigthBar = new QToolBar;
-	rigthBar->setOrientation(Qt::Vertical);
+	QToolBar* toolBar = new QToolBar;
+	toolBar->setOrientation(Qt::Vertical);
 
-	rigthBar->addAction(choosePen);
-	rigthBar->addSeparator();
+	toolBar->addAction(choosePen);
+	toolBar->addSeparator();
 
-	rigthBar->addAction(chooseBrush);
-	rigthBar->addSeparator();
+	toolBar->addAction(chooseBrush);
+	toolBar->addSeparator();
 
-	rigthBar->addAction(chooseEraser);
-	rigthBar->addSeparator();
+	toolBar->addAction(chooseEraser);
+	toolBar->addSeparator();
 
-	rigthBar->addAction(chooseDropper);
-	rigthBar->addSeparator();
+	toolBar->addAction(chooseDropper);
+	toolBar->addSeparator();
 
-	rigthBar->addAction(chooseHand);
-	rigthBar->addSeparator();
+	toolBar->addAction(chooseHand);
+	toolBar->addSeparator();
 
-	rigthBar->addAction(chooseRotate);
-	rigthBar->addSeparator();
+	toolBar->addAction(chooseRotate);
+	toolBar->addSeparator();
 
-	rigthBar->addAction(chooseSpray);
-	rigthBar->addSeparator();
+	toolBar->addAction(chooseSpray);
+	toolBar->addSeparator();
 
-	rigthBar->addAction(chooseLine);
-	rigthBar->addSeparator();
+	toolBar->addAction(chooseLine);
+	toolBar->addSeparator();
 
-	rigthBar->addAction(chooseColor);
+	toolBar->addAction(chooseColor);
 
 	QSlider* penWidthSlider = new QSlider(Qt::Horizontal);
 	penWidthSlider->setRange(1, 20);
@@ -61,10 +61,34 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 						   penSizeDisplay, qOverload<int>(&QLabel::setNum));
 
 	Q_ASSERT(penOk);
-	rigthBar->addWidget(penWidthSlider);
-	rigthBar->addWidget(penSizeDisplay);
+	toolBar->addWidget(penWidthSlider);
+	toolBar->addWidget(penSizeDisplay);
 
-	hLayout->addWidget(rigthBar);
+	color1 = new ColorWidget("Color 1", Qt::black);
+	color2 = new ColorWidget("Color 2", Qt::white);
+
+	color1->setActive(true);
+
+	bool colorOk = true;
+
+	colorOk &= (bool)connect(color1, &ColorWidget::signalActiveColorChanged,
+						     color2, &ColorWidget::slotActiveColorChanged);
+
+	colorOk &= (bool)connect(color2, &ColorWidget::signalActiveColorChanged,
+							 color1, &ColorWidget::slotActiveColorChanged);
+
+	colorOk &= (bool)connect(color1, &ColorWidget::signalActiveColorChanged,
+							 this, &CentralWindow::slotColorChanged);
+
+	colorOk &= (bool)connect(color2, &ColorWidget::signalActiveColorChanged,
+						     this, &CentralWindow::slotColorChanged);
+	
+	Q_ASSERT(colorOk);
+
+	toolBar->addWidget(color1);
+	toolBar->addWidget(color2);
+
+	hLayout->addWidget(toolBar);
 
 	ActiveArea* area = new ActiveArea(arguments);
 
@@ -136,6 +160,9 @@ void CentralWindow::connectSignals()
 
 	areaCon &= (bool)connect(area, &ActiveArea::signalUndoStatusChanged,
 							 this, &CentralWindow::signalUndoStatus);
+
+	areaCon &= (bool)connect(area, &ActiveArea::signalColorChanged,
+							 this, &CentralWindow::slotColorChanged);
 
 	Q_ASSERT(areaCon);
 
@@ -218,6 +245,12 @@ void CentralWindow::slotColorChanged(const QColor& newColor)
 {
 	activeColor = newColor;
 	activeColor.getRgb(&arguments["red"], &arguments["green"], &arguments["blue"]);
+
+	//updating color widget in case color changed by dropper
+	if (color1->isActive())
+		color1->setColor(activeColor);
+	else
+		color2->setColor(activeColor);
 }
 
 void CentralWindow::slotPenSizeChanged(int newSize)

@@ -131,7 +131,8 @@ bool ActiveArea::Draw(Instrument* instr, OperationType operType)
         break;
 
     case OpStatus::ColorChanged:
-        //Should emit colorChanged signal
+        emit signalColorChanged(QColor(arguments["red"], 
+                                arguments["green"], arguments["blue"]));
         break;
     default:
         break;

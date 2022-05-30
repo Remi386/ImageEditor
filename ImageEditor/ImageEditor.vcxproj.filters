@@ -85,12 +85,18 @@
     <ClCompile Include="Dropper.cpp">
       <Filter>Instruments</Filter>
     </ClCompile>
+    <ClCompile Include="ColorWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="ActiveArea.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="CentralWindow.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="ColorWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
