@@ -88,6 +88,9 @@
     <ClCompile Include="ColorWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Flood.cpp">
+      <Filter>Instruments</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="ActiveArea.h">
@@ -123,6 +126,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Dropper.h">
+      <Filter>Instruments</Filter>
+    </ClInclude>
+    <ClInclude Include="Flood.h">
       <Filter>Instruments</Filter>
     </ClInclude>
   </ItemGroup>

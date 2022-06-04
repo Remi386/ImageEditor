@@ -200,6 +200,7 @@
     <ClCompile Include="ColorWidget.cpp" />
     <ClCompile Include="Dropper.cpp" />
     <ClCompile Include="Eraser.cpp" />
+    <ClCompile Include="Flood.cpp" />
     <ClCompile Include="HistoryBuffer.cpp" />
     <ClCompile Include="ImageEditor.cpp" />
     <ClCompile Include="Line.cpp" />
@@ -221,6 +222,7 @@
     <QtMoc Include="ColorWidget.h" />
     <ClInclude Include="Dropper.h" />
     <ClInclude Include="Eraser.h" />
+    <ClInclude Include="Flood.h" />
     <ClInclude Include="HistoryBuffer.h" />
     <ClInclude Include="InstrumentBase.h" />
     <ClInclude Include="Line.h" />

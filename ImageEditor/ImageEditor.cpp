@@ -7,22 +7,35 @@ ImageEditor::ImageEditor(QWidget *parent)
     QMenu* fileMenu = menuBar()->addMenu("&File");
 
     bool openActs = true;
+
+    QAction* newFileAct = new QAction("&New file");
+    newFileAct->setShortcut(Qt::CTRL + Qt::Key_N);
+    openActs &= (bool)connect(newFileAct, &QAction::triggered, this, &ImageEditor::signalNew);
+
     QAction* open = new QAction("&Open file");
     open->setShortcut(Qt::CTRL + Qt::Key_A);
     openActs &= (bool)connect(open, &QAction::triggered, this, &ImageEditor::slotOpen);
     
     QAction* save = new QAction("&Save");
     save->setShortcut(Qt::CTRL + Qt::Key_S);
-    openActs &= (bool)connect(save, &QAction::triggered, this, &ImageEditor::slotSave);
+    openActs &= (bool)connect(save, &QAction::triggered, this, &ImageEditor::signalSave);
+
+    QAction* saveAs = new QAction("Save &as");
+    saveAs->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_S);
+    openActs &= (bool)connect(saveAs, &QAction::triggered, this, &ImageEditor::signalSaveAs);
 
     QAction* about = new QAction("&About ImageEditor");
     openActs &= (bool)connect(about, &QAction::triggered, this, &ImageEditor::slotAbout);
 
     Q_ASSERT(openActs);
 
+    fileMenu->addAction(newFileAct);
+    fileMenu->addSeparator();
     fileMenu->addAction(open);
     fileMenu->addSeparator();
     fileMenu->addAction(save);
+    fileMenu->addSeparator();
+    fileMenu->addAction(saveAs);
     fileMenu->addSeparator();
     fileMenu->addAction(about);
     fileMenu->addSeparator();
@@ -55,6 +68,9 @@ ImageEditor::ImageEditor(QWidget *parent)
                               centralWindow, &CentralWindow::slotOpenFile);
 
     centWind &= (bool)connect(this, &ImageEditor::signalSave,
+                              centralWindow, &CentralWindow::slotSave);
+
+    centWind &= (bool)connect(this, &ImageEditor::signalSaveAs,
                               centralWindow, &CentralWindow::slotSaveAs);
 
     centWind &= (bool)connect(centralWindow, &CentralWindow::signalMouseMoved,
@@ -72,6 +88,9 @@ ImageEditor::ImageEditor(QWidget *parent)
     centWind &= (bool)connect(centralWindow, &CentralWindow::signalUndoStatus,
                               this, &ImageEditor::slotStatusUndoChanged);
 
+    centWind &= (bool)connect(this, &ImageEditor::signalNew,
+                              centralWindow, &CentralWindow::slotNewFile);
+
     Q_ASSERT(centWind);
 
     setCentralWidget(centralWindow);
@@ -80,17 +99,6 @@ ImageEditor::ImageEditor(QWidget *parent)
     QStatusBar* statBar = statusBar();
     statBar->addWidget(mousePosition);
 
-    //Getting supported extensions
-    bool begin = true;
-    foreach(const QByteArray& format, QImageWriter::supportedImageFormats()) {
-        if (begin) 
-            begin = false;
-        else
-            supportedExtensions += ";;";
-
-        supportedExtensions += QString::fromLatin1(format);
-    };
-    
     resize(500, 400);
 }
 
@@ -106,17 +114,6 @@ void ImageEditor::slotOpen()
                                                     "", tr("Image Files (*.png *.jpg *.bmp)"));
 
     emit signalOpen(fileName);
-}
-
-void ImageEditor::slotSave()
-{
-    QString chosenExtension;
-
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"),
-        "", supportedExtensions,
-        &chosenExtension);
-
-    emit signalSave(fileName, chosenExtension);
 }
 
 void ImageEditor::slotAbout()

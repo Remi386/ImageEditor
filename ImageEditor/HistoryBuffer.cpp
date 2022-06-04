@@ -13,7 +13,8 @@ HistoryBuffer::HistoryBuffer()
 bool HistoryBuffer::getNext(QImage& imageCopyTo)
 {
 	if (index <= MaxBufferSize - 2) {
-		imageCopyTo = buffer[++index];
+		if(!buffer[++index].isNull())
+			imageCopyTo = buffer[index];
 	}
 
 	return index == (imagesCount - 1) ? false : true;
@@ -22,7 +23,8 @@ bool HistoryBuffer::getNext(QImage& imageCopyTo)
 bool HistoryBuffer::getPrev(QImage& imageCopyTo)
 {
 	if (index >= 1) {
-		imageCopyTo = buffer[--index];
+		if (!buffer[--index].isNull())
+			imageCopyTo = buffer[index];
 	}
 
 	return index == 0 ? false : true;

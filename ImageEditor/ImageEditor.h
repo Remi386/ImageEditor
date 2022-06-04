@@ -15,13 +15,14 @@ public:
     ImageEditor(QWidget *parent = Q_NULLPTR);
 
 signals:
+    void signalNew();
     void signalOpen(const QString& fileName);
-    void signalSave(const QString& fileName, const QString& fileExtension);
+    void signalSave();
+    void signalSaveAs();
     void signalUndo();
     void signalRedo();
 
 public slots:
-    void slotSave();
     void slotOpen();
     void slotAbout();
     void slotMouseMoved(QPoint mousePosition);

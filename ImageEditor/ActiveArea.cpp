@@ -1,10 +1,32 @@
 #include "ActiveArea.h"
 #include <stdexcept>
 
-ActiveArea::ActiveArea(QHash<QString, int>& args, QWidget* parent /* = Q_NULLPTR*/)
+QString ActiveArea::supportedExtensions;
+
+ActiveArea::ActiveArea(QHash<QString, int>& args, int options /* = CreateNewImage*/,
+                       QWidget* parent /* = Q_NULLPTR*/)
     :arguments(args), QWidget(parent)
 {
-    image.load("TestImage.jpg");
+    static int imageCounter = -1;
+
+    if (options & ResetCounter) {
+        imageCounter = -1;
+    }
+
+    if (options & CreateNewImage) {
+        QImage newImage(QSize(600, 400), QImage::Format_RGB32);
+        newImage.fill(qRgb(255, 255, 255));
+        image = newImage;
+
+        fileName = "Untitled";
+        
+        if (++imageCounter != 0)
+            fileName += QString::number(imageCounter);
+    }
+
+    if (supportedExtensions.isEmpty())
+        getSupportedExtensions();
+
     resize(image.size());
     setAttribute(Qt::WA_StaticContents);
     setMouseTracking(true);
@@ -14,13 +36,16 @@ ActiveArea::ActiveArea(QHash<QString, int>& args, QWidget* parent /* = Q_NULLPTR
 
 void ActiveArea::mousePressEvent(QMouseEvent* me)
 {
-    arguments["prevX"] = me->x();
-    arguments["prevY"] = me->y();
+    if (me->button() == Qt::LeftButton) {
 
-    arguments["X"] = me->x();
-    arguments["Y"] = me->y();
+        arguments["prevX"] = me->x();
+        arguments["prevY"] = me->y();
 
-    emit signalMousePressed();
+        arguments["X"] = me->x();
+        arguments["Y"] = me->y();
+
+        emit signalMousePressed();
+    }
 
     QWidget::mousePressEvent(me);
 }
@@ -40,24 +65,15 @@ void ActiveArea::mouseMoveEvent(QMouseEvent* me)
 
 void ActiveArea::mouseReleaseEvent(QMouseEvent* me)
 {
-    arguments["X"] = me->x();
-    arguments["Y"] = me->y();
+    if (me->button() == Qt::LeftButton) {
+        arguments["X"] = me->x();
+        arguments["Y"] = me->y();
 
-    emit signalMouseReleased();
+        emit signalMouseReleased();
+    }  
 
     QWidget::mouseReleaseEvent(me);
 }
-
-//void ActiveArea::wheelEvent(QWheelEvent* we)
-//{
-//    if (QGuiApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
-//        if (scaleFactor < 3.0 && scaleFactor > 0.33) {
-//            scaleFactor += we->angleDelta().y() / 120. / 12.;
-//            emit signalScaleFactorChanged(scaleFactor);
-//        }
-//    }
-//    QWidget::wheelEvent(we);
-//}
 
 void ActiveArea::paintEvent(QPaintEvent* pe)
 {
@@ -69,46 +85,100 @@ void ActiveArea::paintEvent(QPaintEvent* pe)
     QWidget::paintEvent(pe);
 }
 
-//void ActiveArea::resizeEvent(QResizeEvent* event)
-//{
-//    /*if (width() > image.width() || height() > image.height()) {
-//        int newWidth = qMax(width() + 128, image.width());
-//        int newHeight = qMax(height() + 128, image.height());
-//        resizeImage(&image, QSize(newWidth, newHeight));
-//        update();
-//    }*/
-//    QWidget::resizeEvent(event);
-//}
-
-//void ActiveArea::resizeImage(QImage* image, const QSize& newSize)
-//{
-//    if (image->size() == newSize)
-//        return;
-//
-//    QImage newImage(newSize, QImage::Format_RGB32);
-//    newImage.fill(qRgb(255, 255, 255));
-//    QPainter painter(&newImage);
-//    painter.drawImage(QPoint(0, 0), *image);
-//    *image = newImage;
-//}
-
-bool ActiveArea::SaveAs(const QString& fileName, const QString& extension)
+void ActiveArea::getSupportedExtensions()
 {
-    return image.save(fileName + "." + extension, extension.toLatin1().constData());
+    foreach(const QByteArray & format, QImageWriter::supportedImageFormats()) {
+        QString strFormat = QString::fromLatin1(format);
+        supportedExtensions += strFormat.toUpper() + QString(" (*.") + strFormat + QString(");;");
+    };
+
+    //deleting two last characters to correct display
+    int lastIndex = supportedExtensions.size() - 1;
+    supportedExtensions[lastIndex] = supportedExtensions[lastIndex - 1] = ' ';
 }
 
-bool ActiveArea::Open(const QString& fileName)
+//pretty view of file name
+QString ActiveArea::simplifyPath(QString path)
 {
-    if (image.load(fileName)) {
+    int slashIndex = -1, pointIndex = -1;
+    slashIndex = path.lastIndexOf(QDir::toNativeSeparators("/"));
+    pointIndex = path.lastIndexOf('.');
+
+    if (slashIndex != -1) {
+        path = path.mid(slashIndex + 1, qMax(pointIndex - slashIndex - 1, -1));
+    }
+
+    return path;
+}
+
+bool ActiveArea::Save()
+{
+    if (path.isEmpty())
+        return SaveAs();
+
+    return isPossibleToClose = image.save(path);
+}
+
+bool ActiveArea::SaveAs()
+{
+
+    path = QFileDialog::getSaveFileName(this, tr("Save image"), 
+                                        QDir::currentPath() + "/" + fileName,
+                                        supportedExtensions);
+
+    if (image.save(path)) {
+        fileName = simplifyPath(path);
+        return isPossibleToClose = true;
+    }
+
+    return false;
+}
+
+bool ActiveArea::Open(const QString& fName)
+{
+    if (image.load(fName)) {
         historyBuffer.clear();
         historyBuffer.addImage(image);
-        emit signalRedoStatusChanged(false);
-        emit signalUndoStatusChanged(false);
+
         resize(image.size());
+
+        isPossibleToRedo = false;
+        isPossibleToUndo = false;
+        isPossibleToClose = true;
+
+        emit signalRedoStatusChanged(isPossibleToRedo);
+        emit signalUndoStatusChanged(isPossibleToUndo);
+
+        path = fName;
+        fileName = simplifyPath(path);
+
         return true;
     }
 
     return false;
+}
+
+bool ActiveArea::CloseArea()
+{
+    if (!isPossibleToClose) {
+        QMessageBox mesBox(QMessageBox::Information,
+            "ImageEditor", "Do you want to save changes to " + fileName + "?",
+            QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+
+        int status = mesBox.exec();
+
+        if (status == QMessageBox::No)
+            return true;
+
+        if (status == QMessageBox::Cancel)
+            return false;
+
+        if (status == QMessageBox::Yes) {
+            return Save();
+        }
+    }
+
+    return true;
 }
 
 bool ActiveArea::Draw(Instrument* instr, OperationType operType)
@@ -120,21 +190,26 @@ bool ActiveArea::Draw(Instrument* instr, OperationType operType)
     }
     catch (std::exception& ex) {
         QMessageBox::information(this, "Unable to perform an operation",
-                                 ex.what());
+            ex.what());
     }
-    
+
     switch (operStatus) {
     case OpStatus::Done:
         historyBuffer.addImage(image);
-        emit signalRedoStatusChanged(false);
-        emit signalUndoStatusChanged(true);
+
+        isPossibleToRedo = false;
+        isPossibleToUndo = true;
+        isPossibleToClose = false;
+
+        emit signalRedoStatusChanged(isPossibleToRedo);
+        emit signalUndoStatusChanged(isPossibleToUndo);
         break;
 
     case OpStatus::ColorChanged:
         emit signalColorChanged(QColor(arguments["red"], 
                                 arguments["green"], arguments["blue"]));
         break;
-    default:
+    case OpStatus::InProgress:
         break;
     }
 
@@ -144,28 +219,18 @@ bool ActiveArea::Draw(Instrument* instr, OperationType operType)
 
 bool ActiveArea::Undo()
 {
-    QImage newImage;
+    isPossibleToUndo = historyBuffer.getPrev(image);
+    update();
 
-    bool statFlag = historyBuffer.getPrev(newImage);
-
-    if (!newImage.isNull()) {
-        image = newImage;
-        update();
-    }
-
-    return statFlag;
+    isPossibleToRedo = true;
+    return isPossibleToUndo;
 }
 
 bool ActiveArea::Redo()
 {
-    QImage newImage;
+    isPossibleToRedo = historyBuffer.getNext(image);
+    update();
 
-    bool statFlag = historyBuffer.getNext(newImage);
-
-    if (!newImage.isNull()) {
-        image = newImage;
-        update();
-    }
-
-    return statFlag;
+    isPossibleToUndo = true;
+    return isPossibleToRedo;
 }

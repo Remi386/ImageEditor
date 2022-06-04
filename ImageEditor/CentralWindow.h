@@ -13,10 +13,11 @@ public:
 
 private:
 	void connectSignals();
+	void connectActiveArea(ActiveArea* area);
 	void createActions();
 	void changeInstrument(Instrument* newInst);
-	ActiveArea* GetActiveArea();
-	//void scaleScrollBar(QScrollBar* scrollBar, double scaleFactor);
+	ActiveArea* GetActiveArea(int index = -1);
+	void createNewTab(ActiveArea* actArea);
 
 signals:
 	void signalMouseMoved(QPoint mousePosition);
@@ -29,8 +30,11 @@ public slots:
 	void slotMouseMoved(QPoint mousePosition);
 	void slotMouseReleased();
 
-	void slotSaveAs(const QString& fileName, const QString& fileExtension);
+	void slotNewFile();
+	void slotSaveAs();
+	void slotSave();
 	void slotOpenFile(const QString& fileName);
+	void slotCloseRequest(int index);
 
 	void slotColorChanged(const QColor& newColor);
 	void slotPenSizeChanged(int newSize);
@@ -38,16 +42,13 @@ public slots:
 	void slotUndo();
 	void slotRedo();
 
-	//void slotScaleFactorChanged(double scaleFactor);
-
+	void slotCurrentWidgetChanged();
 private:
-	QScrollArea* activeArea;
-
+	QTabWidget* tabWidget;
 	Instrument* currentInstrument;
 
 	QHash<QString, int> arguments;
 	QColor activeColor = Qt::black;
-	QColor secondColor = Qt::white;
 
 	int penSize = 1;
 	bool isMousePressed = false;
@@ -56,8 +57,7 @@ private:
 	QAction* chooseBrush;
 	QAction* chooseEraser;
 	QAction* chooseDropper;
-	QAction* chooseHand;
-	QAction* chooseRotate;
+	QAction* chooseFlood;
 	QAction* chooseSpray;
 	QAction* chooseLine;
 	QAction* chooseColor;

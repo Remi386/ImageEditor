@@ -1,15 +1,25 @@
 #pragma once
 #include <QtWidgets>
 #include "InstrumentBase.h"
-#include <array>
 #include "HistoryBuffer.h"
+#include <tuple>
 
 class ActiveArea : public QWidget {
 	Q_OBJECT
 public:
-	ActiveArea(QHash<QString, int>& arguments, QWidget* parent = Q_NULLPTR);
 
-	bool SaveAs(const QString& fileName, const QString& extension);
+	enum Option {
+		Nothing = 0x00,
+		CreateNewImage = 0x01,
+		ResetCounter = 0x02
+	};
+
+	ActiveArea(QHash<QString, int>& arguments, int options = CreateNewImage,
+		       QWidget* parent = Q_NULLPTR);
+
+	bool Save();
+
+	bool SaveAs();
 
 	bool Open(const QString& fileName);
 
@@ -19,17 +29,31 @@ public:
 
 	bool Redo();
 
-	//double getScaleFactor() { return scaleFactor; }
-	//void ZoomIn(double scale);
-	//void ZoomOut(double scale);
+	bool CloseArea();
+
+	QString GetImageName() { return fileName; };
+
+	QString GetPath() { return path; };
+
+	std::tuple<bool, bool> GetRedoUndoStatus() 
+		{ return std::make_tuple(isPossibleToRedo, isPossibleToUndo); }
 
 private:
 	QImage image;
 	QString fileName;
+	QString path;
 	QHash<QString, int>& arguments;
 	HistoryBuffer historyBuffer;
 	size_t currentHistoryIndex = 0;
+	bool isPossibleToRedo = false;
+	bool isPossibleToUndo = false;
+	bool isPossibleToClose = true;
+	static QString supportedExtensions;
 	//double scaleFactor = 1.0;
+
+	void getSupportedExtensions();
+
+	QString simplifyPath(QString path);
 
 signals:
 	void signalMousePressed();

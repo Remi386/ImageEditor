@@ -6,9 +6,10 @@
 #include "Spray.h"
 #include "Line.h"
 #include "Dropper.h"
+#include "Flood.h"
 
 CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/) 
-	:QWidget(parent), activeArea(new QScrollArea),
+	:QWidget(parent), tabWidget(new QTabWidget),
 	currentInstrument(new Pencil)//Pencil by default
 {
 	createActions();
@@ -32,10 +33,7 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 	toolBar->addAction(chooseDropper);
 	toolBar->addSeparator();
 
-	toolBar->addAction(chooseHand);
-	toolBar->addSeparator();
-
-	toolBar->addAction(chooseRotate);
+	toolBar->addAction(chooseFlood);
 	toolBar->addSeparator();
 
 	toolBar->addAction(chooseSpray);
@@ -91,11 +89,10 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 	hLayout->addWidget(toolBar);
 
 	ActiveArea* area = new ActiveArea(arguments);
-
-	activeArea->setWidget(area);
-	activeArea->setAlignment(Qt::AlignCenter);
-
-	hLayout->addWidget(activeArea);
+	createNewTab(area);
+	
+	tabWidget->setTabsClosable(true);
+	hLayout->addWidget(tabWidget);
 
 	arguments["penSize"] = penSize;
 	activeColor.getRgb(&arguments["red"], &arguments["green"], &arguments["blue"]);
@@ -124,11 +121,8 @@ void CentralWindow::createActions()
 	QIcon DropperIcon("icons/icon-dropper.png");
 	chooseDropper = new QAction(DropperIcon, tr("Dropper"));
 
-	QIcon HandIcon("icons/icon-hand.png");
-	chooseHand = new QAction(HandIcon, tr("Hand"));
-
-	QIcon RotateIcon("icons/icon-rotate.png");
-	chooseRotate = new QAction(RotateIcon, tr("Rotate"));
+	QIcon FloodIcon("icons/icon-flood.png");
+	chooseFlood = new QAction(FloodIcon, tr("Fill with color"));
 
 	QIcon SprayIcon("icons/icon-spray.png");
 	chooseSpray = new QAction(SprayIcon, tr("Spray"));
@@ -140,10 +134,8 @@ void CentralWindow::createActions()
 	chooseColor = new QAction(PaletteIcon, tr("Choose color"));
 }
 
-void CentralWindow::connectSignals()
+void CentralWindow::connectActiveArea(ActiveArea* area)
 {
-	ActiveArea* area = GetActiveArea();
-
 	bool areaCon = true;
 
 	areaCon &= (bool)connect(area, &ActiveArea::signalMousePressed,
@@ -165,8 +157,12 @@ void CentralWindow::connectSignals()
 							 this, &CentralWindow::slotColorChanged);
 
 	Q_ASSERT(areaCon);
+}
 
+void CentralWindow::connectSignals()
+{
 	bool actB = true;
+
 	actB &= (bool)connect(choosePen, &QAction::triggered, 
 						  this, [this]() {changeInstrument(new Pencil); });
 
@@ -185,26 +181,71 @@ void CentralWindow::connectSignals()
 	actB &= (bool)connect(chooseDropper, &QAction::triggered, 
 						  this, [this]() {changeInstrument(new Dropper); });
 
+	actB &= (bool)connect(chooseFlood, &QAction::triggered,
+						  this, [this]() {changeInstrument(new Flood); });
+
 	actB &= (bool)connect(chooseColor, &QAction::triggered, 
 						  this, [this]() { slotColorChanged(QColorDialog::getColor()); });
+
+	actB &= (bool)connect(tabWidget, &QTabWidget::currentChanged,
+						  this, &CentralWindow::slotCurrentWidgetChanged);
+
+	actB &= (bool)connect(tabWidget, &QTabWidget::tabCloseRequested,
+						  this, &CentralWindow::slotCloseRequest);
 
 	Q_ASSERT(actB);
 }
 
-void CentralWindow::slotSaveAs(const QString& fileName, const QString& extension)
+void CentralWindow::createNewTab(ActiveArea* actArea)
 {
-	if (!GetActiveArea()->SaveAs(fileName, extension)) {
+	connectActiveArea(actArea);
+	QScrollArea* scrArea = new QScrollArea;
+	scrArea->setWidget(actArea);
+	scrArea->setAlignment(Qt::AlignCenter);
+
+	int index = tabWidget->addTab(scrArea, actArea->GetImageName());
+	tabWidget->setCurrentIndex(index);
+}
+
+void CentralWindow::slotNewFile()
+{
+	ActiveArea* actArea = new ActiveArea(arguments);
+	createNewTab(actArea);
+}
+
+void CentralWindow::slotSave()
+{
+	ActiveArea* area = GetActiveArea();
+	if (!area->Save()) {
 		QMessageBox::warning(this,
-			tr("Warning"), tr("Unable to save a file: ") + fileName + "." + extension
+			tr("Warning"), tr("Unable to save a file: ") + area->GetPath()
 		);
 	}
+	tabWidget->setTabText(tabWidget->currentIndex(), area->GetImageName());
+}
+
+void CentralWindow::slotSaveAs()
+{
+	ActiveArea* area = GetActiveArea();
+	if (!area->SaveAs()) {
+		QMessageBox::warning(this,
+			tr("Warning"), tr("Unable to save a file: ") + area->GetPath()
+		);
+	}
+	tabWidget->setTabText(tabWidget->currentIndex(), area->GetImageName());
 }
 
 void CentralWindow::slotOpenFile(const QString& fileName)
 {
-	if (!GetActiveArea()->Open(fileName)) {
+	ActiveArea* actArea = new ActiveArea(arguments, ActiveArea::Nothing);
+
+	if (!actArea->Open(fileName)) {
 		QMessageBox::warning(this, tr("Warning"), tr("Unable to open a file: ") + fileName);
+		delete actArea;
+		return;
 	}
+
+	createNewTab(actArea);
 }
 
 void CentralWindow::slotMousePressed()
@@ -226,20 +267,6 @@ void CentralWindow::slotMouseReleased()
 	isMousePressed = false;
 	GetActiveArea()->Draw(currentInstrument, OperationType::Release);
 }
-
-//void CentralWindow::slotScaleFactorChanged(double scaleFactor)
-//{
-//	ActiveArea* area = GetActiveArea();
-//	area->resize(area->size() * scaleFactor);
-//	scaleScrollBar(activeArea->horizontalScrollBar(), scaleFactor);
-//	scaleScrollBar(activeArea->verticalScrollBar(), scaleFactor);
-//}
-
-//void CentralWindow::scaleScrollBar(QScrollBar* scrollBar, double scaleFactor)
-//{
-//	scrollBar->setValue(int(scaleFactor * scrollBar->value()
-//		+ ((scaleFactor - 1) * scrollBar->pageStep() / 2)));
-//}
 
 void CentralWindow::slotColorChanged(const QColor& newColor)
 {
@@ -267,9 +294,39 @@ void CentralWindow::changeInstrument(Instrument* newInst)
 	}
 }
 
-ActiveArea* CentralWindow::GetActiveArea()
+ActiveArea* CentralWindow::GetActiveArea(int index /*= -1*/)
 {
-	return qobject_cast<ActiveArea*>(activeArea->widget());
+	QScrollArea* scrArea;
+	if(index == -1)
+		scrArea = qobject_cast<QScrollArea*>(tabWidget->currentWidget());
+	else
+		scrArea = qobject_cast<QScrollArea*>(tabWidget->widget(index));
+	
+	return qobject_cast<ActiveArea*>(scrArea->widget());
+}
+
+void CentralWindow::slotCloseRequest(int index)
+{
+	ActiveArea* area = GetActiveArea(index);
+
+	if (area->CloseArea()) {
+		if (tabWidget->count() == 1) {
+			ActiveArea* newArea = new ActiveArea(arguments, 
+												 ActiveArea::CreateNewImage | 
+												 ActiveArea::ResetCounter);
+			createNewTab(newArea);
+		}
+
+		tabWidget->removeTab(index);
+	}
+}
+
+void CentralWindow::slotCurrentWidgetChanged()
+{
+	ActiveArea* area = GetActiveArea();
+	auto [isPossibleToRedo, isPossibleToUndo] = area->GetRedoUndoStatus();
+	emit signalRedoStatus(isPossibleToRedo);
+	emit signalUndoStatus(isPossibleToUndo);
 }
 
 void CentralWindow::slotUndo()
