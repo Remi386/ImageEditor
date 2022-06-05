@@ -1,7 +1,8 @@
 #pragma once
 #include <QtWidgets>
 #include "ActiveArea.h"
-#include "ColorWidget.h"
+
+class ColorWidget;
 
 class CentralWindow : public QWidget
 {
@@ -9,15 +10,20 @@ class CentralWindow : public QWidget
 public:
 	CentralWindow(QWidget* parent = Q_NULLPTR);
 
+	bool tryToClose();
+
 	~CentralWindow();
 
 private:
 	void connectSignals();
 	void connectActiveArea(ActiveArea* area);
 	void createActions();
-	void changeInstrument(Instrument* newInst);
+	void createInstruments();
+	void changeInstrument(const QString& instName);
 	ActiveArea* GetActiveArea(int index = -1);
 	void createNewTab(ActiveArea* actArea);
+	void getSupportedExtensions();
+	bool closeTab(int index);
 
 signals:
 	void signalMouseMoved(QPoint mousePosition);
@@ -29,6 +35,8 @@ public slots:
 	void slotMousePressed();
 	void slotMouseMoved(QPoint mousePosition);
 	void slotMouseReleased();
+	void slotCursorEnteredArea();
+	//void slotCursorLeavedArea();
 
 	void slotNewFile();
 	void slotSaveAs();
@@ -45,9 +53,15 @@ public slots:
 	void slotCurrentWidgetChanged();
 private:
 	QTabWidget* tabWidget;
-	Instrument* currentInstrument;
 
+	QString supportedExtensions;
+
+	QHash<QString, QPixmap> cursors;
+	QHash<QString, Instrument*> instruments;
 	QHash<QString, int> arguments;
+
+	Instrument* activeInstrument;
+	QPixmap activeCursor;
 	QColor activeColor = Qt::black;
 
 	int penSize = 1;

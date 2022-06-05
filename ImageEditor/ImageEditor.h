@@ -6,10 +6,12 @@ class ImageEditor : public QMainWindow
     Q_OBJECT
 private:
     QString supportedExtensions;
-    QLabel* mousePosition;
+    QLabel* mousePositionLabel;
 
     QAction* undo;
     QAction* redo;
+
+    bool CloseWindow();
 
 public:
     ImageEditor(QWidget *parent = Q_NULLPTR);
@@ -29,4 +31,7 @@ public slots:
 
     void slotStatusUndoChanged(bool status);
     void slotStatusRedoChanged(bool status);
+
+protected:
+    void closeEvent(QCloseEvent* ce) override;
 };

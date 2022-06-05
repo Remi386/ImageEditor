@@ -1,8 +1,6 @@
 #include "ActiveArea.h"
 #include <stdexcept>
 
-QString ActiveArea::supportedExtensions;
-
 ActiveArea::ActiveArea(QHash<QString, int>& args, int options /* = CreateNewImage*/,
                        QWidget* parent /* = Q_NULLPTR*/)
     :arguments(args), QWidget(parent)
@@ -24,14 +22,23 @@ ActiveArea::ActiveArea(QHash<QString, int>& args, int options /* = CreateNewImag
             fileName += QString::number(imageCounter);
     }
 
-    if (supportedExtensions.isEmpty())
-        getSupportedExtensions();
-
     resize(image.size());
     setAttribute(Qt::WA_StaticContents);
     setMouseTracking(true);
 
     historyBuffer.addImage(image);
+}
+
+void ActiveArea::enterEvent(QEvent* e)
+{
+    emit signalCursorEntered();
+    QWidget::enterEvent(e);
+}
+
+void ActiveArea::leaveEvent(QEvent* e)
+{
+    emit signalCursorLeaved();
+    QWidget::enterEvent(e);
 }
 
 void ActiveArea::mousePressEvent(QMouseEvent* me)
@@ -85,23 +92,11 @@ void ActiveArea::paintEvent(QPaintEvent* pe)
     QWidget::paintEvent(pe);
 }
 
-void ActiveArea::getSupportedExtensions()
-{
-    foreach(const QByteArray & format, QImageWriter::supportedImageFormats()) {
-        QString strFormat = QString::fromLatin1(format);
-        supportedExtensions += strFormat.toUpper() + QString(" (*.") + strFormat + QString(");;");
-    };
-
-    //deleting two last characters to correct display
-    int lastIndex = supportedExtensions.size() - 1;
-    supportedExtensions[lastIndex] = supportedExtensions[lastIndex - 1] = ' ';
-}
-
 //pretty view of file name
 QString ActiveArea::simplifyPath(QString path)
 {
     int slashIndex = -1, pointIndex = -1;
-    slashIndex = path.lastIndexOf(QDir::toNativeSeparators("/"));
+    slashIndex = path.lastIndexOf("/");
     pointIndex = path.lastIndexOf('.');
 
     if (slashIndex != -1) {
@@ -111,15 +106,15 @@ QString ActiveArea::simplifyPath(QString path)
     return path;
 }
 
-bool ActiveArea::Save()
+bool ActiveArea::Save(const QString& supportedExtensions)
 {
     if (path.isEmpty())
-        return SaveAs();
+        return SaveAs(supportedExtensions);
 
     return isPossibleToClose = image.save(path);
 }
 
-bool ActiveArea::SaveAs()
+bool ActiveArea::SaveAs(const QString& supportedExtensions)
 {
 
     path = QFileDialog::getSaveFileName(this, tr("Save image"), 
@@ -158,7 +153,7 @@ bool ActiveArea::Open(const QString& fName)
     return false;
 }
 
-bool ActiveArea::CloseArea()
+bool ActiveArea::CloseArea(const QString& supportedExtensions)
 {
     if (!isPossibleToClose) {
         QMessageBox mesBox(QMessageBox::Information,
@@ -174,7 +169,7 @@ bool ActiveArea::CloseArea()
             return false;
 
         if (status == QMessageBox::Yes) {
-            return Save();
+            return Save(supportedExtensions);
         }
     }
 

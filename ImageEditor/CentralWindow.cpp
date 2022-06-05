@@ -1,5 +1,6 @@
 #include "CentralWindow.h"
 #include "ActiveArea.h"
+#include "ColorWidget.h"
 #include "Pencil.h"
 #include "Brush.h"
 #include "Eraser.h"
@@ -9,8 +10,7 @@
 #include "Flood.h"
 
 CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/) 
-	:QWidget(parent), tabWidget(new QTabWidget),
-	currentInstrument(new Pencil)//Pencil by default
+	:QWidget(parent), tabWidget(new QTabWidget)
 {
 	createActions();
 
@@ -44,6 +44,8 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 
 	toolBar->addAction(chooseColor);
 
+	toolBar->setMinimumWidth(70);
+
 	QSlider* penWidthSlider = new QSlider(Qt::Horizontal);
 	penWidthSlider->setRange(1, 20);
 	penWidthSlider->setValue(1);
@@ -64,7 +66,7 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 
 	color1 = new ColorWidget("Color 1", Qt::black);
 	color2 = new ColorWidget("Color 2", Qt::white);
-
+	
 	color1->setActive(true);
 
 	bool colorOk = true;
@@ -85,7 +87,7 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 
 	toolBar->addWidget(color1);
 	toolBar->addWidget(color2);
-
+	
 	hLayout->addWidget(toolBar);
 
 	ActiveArea* area = new ActiveArea(arguments);
@@ -97,14 +99,30 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 	arguments["penSize"] = penSize;
 	activeColor.getRgb(&arguments["red"], &arguments["green"], &arguments["blue"]);
 
+	createInstruments();
 	connectSignals();
+	getSupportedExtensions();
+
+	changeInstrument("Pencil");
 
 	setLayout(hLayout);
 }
 
 CentralWindow::~CentralWindow()
 {
-	delete currentInstrument;
+	for (auto iter = instruments.begin(); iter != instruments.end(); ++iter)
+		delete* iter;	
+}
+
+bool CentralWindow::tryToClose()
+{
+	int tabCount = tabWidget->count();
+
+	for (int i = 0; i < tabCount; ++i)
+		if (!closeTab(0))
+			return false;
+
+	return true;
 }
 
 void CentralWindow::createActions()
@@ -134,6 +152,35 @@ void CentralWindow::createActions()
 	chooseColor = new QAction(PaletteIcon, tr("Choose color"));
 }
 
+void CentralWindow::createInstruments()
+{
+	instruments["Pencil"] = new Pencil;
+	instruments["Brush"] = new Brush;
+	instruments["Eraser"] = new Eraser;
+	instruments["Dropper"] = new Dropper;
+	instruments["Spray"] = new Spray;
+	instruments["Flood"] = new Flood;
+	instruments["Line"] = new Line;
+
+	cursors["Pencil"] = QPixmap("icons/cursor-pen.png");
+	cursors["Brush"] = cursors["Pencil"];
+	cursors["Eraser"] = QPixmap("icons/cursor-eraser.png");
+	cursors["Spray"] = QPixmap("icons/cursor-spray.png");
+	cursors["Dropper"] = QPixmap("icons/cursor-dropper.png");
+	cursors["Flood"] = QPixmap("icons/cursor-flood.png");
+	cursors["Line"] = cursors["Pencil"];
+}
+
+void CentralWindow::slotCursorEnteredArea()
+{
+	if (activeInstrument->isScalable()) {
+		int cursorSize = qMax(3, penSize);
+		GetActiveArea()->setCursor(activeCursor.scaled(cursorSize, cursorSize));
+	}
+	else
+		GetActiveArea()->setCursor(activeCursor);
+}
+
 void CentralWindow::connectActiveArea(ActiveArea* area)
 {
 	bool areaCon = true;
@@ -156,6 +203,9 @@ void CentralWindow::connectActiveArea(ActiveArea* area)
 	areaCon &= (bool)connect(area, &ActiveArea::signalColorChanged,
 							 this, &CentralWindow::slotColorChanged);
 
+	areaCon &= (bool)connect(area, &ActiveArea::signalCursorEntered,
+							 this, &CentralWindow::slotCursorEnteredArea);
+
 	Q_ASSERT(areaCon);
 }
 
@@ -164,25 +214,25 @@ void CentralWindow::connectSignals()
 	bool actB = true;
 
 	actB &= (bool)connect(choosePen, &QAction::triggered, 
-						  this, [this]() {changeInstrument(new Pencil); });
+						  this, [this]() {changeInstrument("Pencil"); });
 
 	actB &= (bool)connect(chooseBrush, &QAction::triggered, 
-						  this, [this]() {changeInstrument(new Brush); });
+						  this, [this]() {changeInstrument("Brush"); });
 	
 	actB &= (bool)connect(chooseEraser, &QAction::triggered, 
-						  this, [this]() {changeInstrument(new Eraser); });
+						  this, [this]() {changeInstrument("Eraser"); });
 	
 	actB &= (bool)connect(chooseSpray, &QAction::triggered, 
-						  this, [this]() {changeInstrument(new Spray); });
+						  this, [this]() {changeInstrument("Spray"); });
 	
 	actB &= (bool)connect(chooseLine, &QAction::triggered, 
-						  this, [this]() {changeInstrument(new Line); });
+						  this, [this]() {changeInstrument("Line"); });
 	
 	actB &= (bool)connect(chooseDropper, &QAction::triggered, 
-						  this, [this]() {changeInstrument(new Dropper); });
+						  this, [this]() {changeInstrument("Dropper"); });
 
 	actB &= (bool)connect(chooseFlood, &QAction::triggered,
-						  this, [this]() {changeInstrument(new Flood); });
+						  this, [this]() {changeInstrument("Flood"); });
 
 	actB &= (bool)connect(chooseColor, &QAction::triggered, 
 						  this, [this]() { slotColorChanged(QColorDialog::getColor()); });
@@ -194,6 +244,18 @@ void CentralWindow::connectSignals()
 						  this, &CentralWindow::slotCloseRequest);
 
 	Q_ASSERT(actB);
+}
+
+void CentralWindow::getSupportedExtensions()
+{
+	foreach(const QByteArray & format, QImageWriter::supportedImageFormats()) {
+		QString strFormat = QString::fromLatin1(format);
+		supportedExtensions += strFormat.toUpper() + QString(" (*.") + strFormat + QString(");;");
+	};
+
+	//deleting two last characters for correct display
+	int lastIndex = supportedExtensions.size() - 1;
+	supportedExtensions[lastIndex] = supportedExtensions[lastIndex - 1] = ' ';
 }
 
 void CentralWindow::createNewTab(ActiveArea* actArea)
@@ -216,7 +278,7 @@ void CentralWindow::slotNewFile()
 void CentralWindow::slotSave()
 {
 	ActiveArea* area = GetActiveArea();
-	if (!area->Save()) {
+	if (!area->Save(supportedExtensions)) {
 		QMessageBox::warning(this,
 			tr("Warning"), tr("Unable to save a file: ") + area->GetPath()
 		);
@@ -227,7 +289,7 @@ void CentralWindow::slotSave()
 void CentralWindow::slotSaveAs()
 {
 	ActiveArea* area = GetActiveArea();
-	if (!area->SaveAs()) {
+	if (!area->SaveAs(supportedExtensions)) {
 		QMessageBox::warning(this,
 			tr("Warning"), tr("Unable to save a file: ") + area->GetPath()
 		);
@@ -251,7 +313,7 @@ void CentralWindow::slotOpenFile(const QString& fileName)
 void CentralWindow::slotMousePressed()
 {
 	isMousePressed = true;
-	GetActiveArea()->Draw(currentInstrument, OperationType::Press);
+	GetActiveArea()->Draw(activeInstrument, OperationType::Press);
 }
 
 void CentralWindow::slotMouseMoved(QPoint pos)
@@ -259,13 +321,13 @@ void CentralWindow::slotMouseMoved(QPoint pos)
 	emit signalMouseMoved(pos);
 
 	if (isMousePressed)
-		GetActiveArea()->Draw(currentInstrument, OperationType::Move);
+		GetActiveArea()->Draw(activeInstrument, OperationType::Move);
 }
 
 void CentralWindow::slotMouseReleased()
 {
 	isMousePressed = false;
-	GetActiveArea()->Draw(currentInstrument, OperationType::Release);
+	GetActiveArea()->Draw(activeInstrument, OperationType::Release);
 }
 
 void CentralWindow::slotColorChanged(const QColor& newColor)
@@ -286,12 +348,15 @@ void CentralWindow::slotPenSizeChanged(int newSize)
 	arguments["penSize"] = penSize;
 }
 
-void CentralWindow::changeInstrument(Instrument* newInst)
+void CentralWindow::changeInstrument(const QString& instName)
 {
-	if (newInst) {
-		delete currentInstrument;
-		currentInstrument = newInst;
+	if (instruments.contains(instName) && cursors.contains(instName)) {
+		activeCursor = cursors[instName];
+		activeInstrument = instruments[instName];
 	}
+	else
+		QMessageBox::critical(this, "ImageEditor", 
+							  "Error! Unknown instrument name: " + instName);
 }
 
 ActiveArea* CentralWindow::GetActiveArea(int index /*= -1*/)
@@ -305,18 +370,20 @@ ActiveArea* CentralWindow::GetActiveArea(int index /*= -1*/)
 	return qobject_cast<ActiveArea*>(scrArea->widget());
 }
 
+bool CentralWindow::closeTab(int index)
+{
+	return GetActiveArea(index)->CloseArea(supportedExtensions);
+}
+
 void CentralWindow::slotCloseRequest(int index)
 {
-	ActiveArea* area = GetActiveArea(index);
-
-	if (area->CloseArea()) {
+	if (closeTab(index)) {
 		if (tabWidget->count() == 1) {
 			ActiveArea* newArea = new ActiveArea(arguments, 
 												 ActiveArea::CreateNewImage | 
 												 ActiveArea::ResetCounter);
 			createNewTab(newArea);
 		}
-
 		tabWidget->removeTab(index);
 	}
 }

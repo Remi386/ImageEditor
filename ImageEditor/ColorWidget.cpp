@@ -1,38 +1,54 @@
 #include "ColorWidget.h"
 
+namespace {
+	constexpr int BaseWidth = 60;
+	constexpr int BaseHeight = 75;
+	
+	constexpr int recWidth = 40;
+	constexpr int recHeight = 45;
+
+	const int approximateCharacterWidth = 5;
+}
+
 ColorWidget::ColorWidget(QString _text, QColor defaultColor, QWidget* parent /* = Q_NULLPTR */)
 	: QWidget(parent), text(_text), mColor(defaultColor)
 {
 	setAttribute(Qt::WA_Hover);
 	setMouseTracking(true);
-	setFixedSize(61, 75);
+	setMinimumSize(BaseWidth + 1, BaseHeight);
 }
 
 void ColorWidget::paintEvent(QPaintEvent* pe)
 {
 	QRect rec = pe->rect().adjusted(0, 0, -1, -1);
-	
+
 	if (_isActive) {
 		drawBackground(rec, QColor(0, 130, 250), QColor(60, 175, 255));
 	}
-	
+
 	if (isHovered) {
 		drawBackground(rec, QColor(0, 190, 250, 200), QColor(125, 205, 250, 150));
 	}
 
-	QPainter painter(this);
+	QPoint colorPosition = QPoint((rec.width() - recWidth) / 2,
+								   rec.height() / 5);
 
+	QPainter painter(this);
+	
 	painter.setPen(Qt::gray);
-	painter.drawRect(QRect(10, 10, 40, 45));
+	painter.drawRect(QRect(colorPosition, QSize(recWidth, recHeight)));
 
 	painter.setPen(Qt::white);
-	painter.drawRect(QRect(11, 11, 38, 43));
+	painter.drawRect(QRect(colorPosition + QPoint(1, 1), 
+						   QSize(recWidth - 2, recHeight - 2)));
 
 	painter.setBrush(QBrush(mColor, Qt::SolidPattern));
-	painter.drawRect(QRect(12, 12, 36, 41));
+	painter.drawRect(QRect(colorPosition + QPoint(2, 2),
+						   QSize(recWidth - 4, recHeight - 4)));
 
 	painter.setPen(QColor(Qt::black));
-	painter.drawText(14, 68, text);
+	painter.drawText(rec.width() / 2 - (text.size() / 2) * approximateCharacterWidth,
+					 rec.height() - 3, text);
 
 	QWidget::paintEvent(pe);
 }
@@ -57,8 +73,8 @@ void ColorWidget::mousePressEvent(QMouseEvent* me)
 	if (me->button() == Qt::LeftButton) {
 		_isActive = true;
 		update();
+		emit signalActiveColorChanged(mColor);
 	}
-	emit signalActiveColorChanged(mColor);
 }
 
 void ColorWidget::setActive(bool activeFlag /* = true*/)

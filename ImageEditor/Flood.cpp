@@ -41,10 +41,10 @@ bool pop(std::stack<int>& stack, int& x, int& y)
 }
 
 //The scanline floodfill algorithm 
-void floodFill(QImage& image, int x, int y, QColor oldColor, QColor newColor)
+bool floodFill(QImage& image, int x, int y, QColor oldColor, QColor newColor)
 {
 	if (colorDifference(newColor, oldColor) < ColorDifferenceValue)
-		return;
+		return false;
 
 	int x1;
 	bool spanAbove, spanBelow;
@@ -93,6 +93,7 @@ void floodFill(QImage& image, int x, int y, QColor oldColor, QColor newColor)
 			x1++;
 		}
 	}
+	return true;
 }
 
 OpStatus Flood::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
@@ -103,8 +104,8 @@ OpStatus Flood::DoOperation(QImage& image, QHash<QString, int>& arguments, Opera
 
 		QColor colorToReplace = image.pixelColor(curPos);
 
-		floodFill(image, curPos.x(), curPos.y(), colorToReplace, activeColor);
-		return OpStatus::Done;
+		if(floodFill(image, curPos.x(), curPos.y(), colorToReplace, activeColor))
+			return OpStatus::Done;
 	}
 
 	return OpStatus::InProgress;

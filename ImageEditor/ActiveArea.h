@@ -17,19 +17,19 @@ public:
 	ActiveArea(QHash<QString, int>& arguments, int options = CreateNewImage,
 		       QWidget* parent = Q_NULLPTR);
 
-	bool Save();
-
-	bool SaveAs();
-
 	bool Open(const QString& fileName);
+
+	bool Save(const QString& supportedExtensions);
+
+	bool SaveAs(const QString& supportedExtensions);
+
+	bool CloseArea(const QString& supportedExtensions);
 
 	bool Draw(Instrument* instr, OperationType operType);
 
 	bool Undo();
 
 	bool Redo();
-
-	bool CloseArea();
 
 	QString GetImageName() { return fileName; };
 
@@ -48,10 +48,6 @@ private:
 	bool isPossibleToRedo = false;
 	bool isPossibleToUndo = false;
 	bool isPossibleToClose = true;
-	static QString supportedExtensions;
-	//double scaleFactor = 1.0;
-
-	void getSupportedExtensions();
 
 	QString simplifyPath(QString path);
 
@@ -62,17 +58,14 @@ signals:
 	void signalRedoStatusChanged(bool status);
 	void signalUndoStatusChanged(bool status);
 	void signalColorChanged(const QColor& newColor);
-	//void signalScaleFactorChanged(double scaleFactor);
+	void signalCursorEntered();
+	void signalCursorLeaved();
 
 protected:
 	void mousePressEvent(QMouseEvent* me) override;
 	void mouseMoveEvent(QMouseEvent* me) override;
 	void mouseReleaseEvent(QMouseEvent* me) override;
-	//void wheelEvent(QWheelEvent* we) override;
-
+	void enterEvent(QEvent* e) override;
+	void leaveEvent(QEvent* e) override;
 	void paintEvent(QPaintEvent* pe) override;
-	//void resizeEvent(QResizeEvent* event) override;
-
-//private:
-	//void resizeImage(QImage* image, const QSize& newSize);
 };

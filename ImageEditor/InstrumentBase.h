@@ -15,7 +15,7 @@ enum class OpStatus {
 	ColorChanged // For dropper
 };
 
-//Defining from what event we drawing
+//Defining from what event we are drawing
 enum class OperationType {
 	Press, 
 	Move,
@@ -36,4 +36,5 @@ public:
 	/// </summary>
 	std::tuple<QPoint, QPoint, QColor, int> getParameters(QHash<QString, int>& args);
 
+	virtual bool isScalable() const = 0;
 };

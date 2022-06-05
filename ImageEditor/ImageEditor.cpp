@@ -2,32 +2,35 @@
 #include "CentralWindow.h"
 
 ImageEditor::ImageEditor(QWidget *parent)
-    : QMainWindow(parent), mousePosition(new QLabel(this))
+    : QMainWindow(parent), mousePositionLabel(new QLabel(this))
 {
     QMenu* fileMenu = menuBar()->addMenu("&File");
 
-    bool openActs = true;
+    bool fileActs = true;
 
     QAction* newFileAct = new QAction("&New file");
     newFileAct->setShortcut(Qt::CTRL + Qt::Key_N);
-    openActs &= (bool)connect(newFileAct, &QAction::triggered, this, &ImageEditor::signalNew);
+    fileActs &= (bool)connect(newFileAct, &QAction::triggered, this, &ImageEditor::signalNew);
 
     QAction* open = new QAction("&Open file");
     open->setShortcut(Qt::CTRL + Qt::Key_A);
-    openActs &= (bool)connect(open, &QAction::triggered, this, &ImageEditor::slotOpen);
-    
+    fileActs &= (bool)connect(open, &QAction::triggered, this, &ImageEditor::slotOpen);
+
     QAction* save = new QAction("&Save");
     save->setShortcut(Qt::CTRL + Qt::Key_S);
-    openActs &= (bool)connect(save, &QAction::triggered, this, &ImageEditor::signalSave);
+    fileActs &= (bool)connect(save, &QAction::triggered, this, &ImageEditor::signalSave);
 
     QAction* saveAs = new QAction("Save &as");
     saveAs->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_S);
-    openActs &= (bool)connect(saveAs, &QAction::triggered, this, &ImageEditor::signalSaveAs);
+    fileActs &= (bool)connect(saveAs, &QAction::triggered, this, &ImageEditor::signalSaveAs);
 
     QAction* about = new QAction("&About ImageEditor");
-    openActs &= (bool)connect(about, &QAction::triggered, this, &ImageEditor::slotAbout);
+    fileActs &= (bool)connect(about, &QAction::triggered, this, &ImageEditor::slotAbout);
 
-    Q_ASSERT(openActs);
+    QAction* exit = new QAction("&Exit");
+    fileActs &= (bool)connect(exit, &QAction::triggered, this, [this]() { close(); });
+
+    Q_ASSERT(fileActs);
 
     fileMenu->addAction(newFileAct);
     fileMenu->addSeparator();
@@ -39,8 +42,8 @@ ImageEditor::ImageEditor(QWidget *parent)
     fileMenu->addSeparator();
     fileMenu->addAction(about);
     fileMenu->addSeparator();
-    fileMenu->addAction("&Exit", qApp, SLOT(quit()));
-    
+    fileMenu->addAction(exit);
+
     QMenu* editMenu = menuBar()->addMenu("&Edit");
     bool editActs = true;
 
@@ -59,52 +62,65 @@ ImageEditor::ImageEditor(QWidget *parent)
     editMenu->addAction(undo);
     fileMenu->addSeparator();
     editMenu->addAction(redo);
-    
+
     CentralWindow* centralWindow = new CentralWindow;
-    
+
     bool centWind = true;
 
     centWind &= (bool)connect(this, &ImageEditor::signalOpen,
-                              centralWindow, &CentralWindow::slotOpenFile);
+        centralWindow, &CentralWindow::slotOpenFile);
 
     centWind &= (bool)connect(this, &ImageEditor::signalSave,
-                              centralWindow, &CentralWindow::slotSave);
+        centralWindow, &CentralWindow::slotSave);
 
     centWind &= (bool)connect(this, &ImageEditor::signalSaveAs,
-                              centralWindow, &CentralWindow::slotSaveAs);
+        centralWindow, &CentralWindow::slotSaveAs);
 
     centWind &= (bool)connect(centralWindow, &CentralWindow::signalMouseMoved,
-                              this, &ImageEditor::slotMouseMoved);
+        this, &ImageEditor::slotMouseMoved);
 
     centWind &= (bool)connect(this, &ImageEditor::signalUndo,
-                              centralWindow, &CentralWindow::slotUndo);
+        centralWindow, &CentralWindow::slotUndo);
 
     centWind &= (bool)connect(this, &ImageEditor::signalRedo,
-                              centralWindow, &CentralWindow::slotRedo);
+        centralWindow, &CentralWindow::slotRedo);
 
-    centWind &= (bool)connect(centralWindow, &CentralWindow::signalRedoStatus, 
-                              this, &ImageEditor::slotStatusRedoChanged);
+    centWind &= (bool)connect(centralWindow, &CentralWindow::signalRedoStatus,
+        this, &ImageEditor::slotStatusRedoChanged);
 
     centWind &= (bool)connect(centralWindow, &CentralWindow::signalUndoStatus,
-                              this, &ImageEditor::slotStatusUndoChanged);
+        this, &ImageEditor::slotStatusUndoChanged);
 
     centWind &= (bool)connect(this, &ImageEditor::signalNew,
-                              centralWindow, &CentralWindow::slotNewFile);
+        centralWindow, &CentralWindow::slotNewFile);
 
     Q_ASSERT(centWind);
 
     setCentralWidget(centralWindow);
-    
-    //Status bar
+
     QStatusBar* statBar = statusBar();
-    statBar->addWidget(mousePosition);
+    statBar->addWidget(mousePositionLabel);
 
     resize(500, 400);
 }
 
+bool ImageEditor::CloseWindow()
+{
+    CentralWindow* wind = qobject_cast<CentralWindow*>(centralWidget());
+    return wind->tryToClose();
+}
+
+void ImageEditor::closeEvent(QCloseEvent* ce)
+{
+    if (CloseWindow())
+        ce->accept();
+    else
+        ce->ignore();
+}
+
 void ImageEditor::slotMouseMoved(QPoint mousePos)
 {
-    mousePosition->setText("X = " + QString::number(mousePos.x()) +
+    mousePositionLabel->setText("X = " + QString::number(mousePos.x()) +
         " , Y = " + QString::number(mousePos.y()));
 }
 

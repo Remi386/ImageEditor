@@ -29,8 +29,10 @@ OpStatus Line::DoOperation(QImage& image, QHash<QString, int>& arguments, Operat
 
 	painter.drawLine(prevMousePosition, curPos);
 
-	if (operType == OperationType::Release)
+	if (operType == OperationType::Release) {
+		imageCopy = QImage();
 		return OpStatus::Done;
+	}
 
 	return OpStatus::InProgress;
 }

@@ -20,11 +20,10 @@ public slots:
 
 protected:
 	void paintEvent(QPaintEvent* pe) override;
-	
 	void mousePressEvent(QMouseEvent* me) override;
 	void enterEvent(QEvent* e) override;
 	void leaveEvent(QEvent* e) override;
-
+	
 private:
 	QString text;
 	QColor mColor;

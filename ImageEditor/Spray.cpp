@@ -8,9 +8,8 @@
 namespace {
 	std::mt19937 mersenne;
 	std::uniform_real_distribution<> degree(0, 360);
+	constexpr int pointsCount = 40;
 }
-
-constexpr int pointsCount = 40;
 
 OpStatus Spray::DoOperation(QImage& image, QHash<QString, int>& arguments, OperationType operType)
 {
@@ -26,7 +25,10 @@ OpStatus Spray::DoOperation(QImage& image, QHash<QString, int>& arguments, Opera
 
 	painter.setPen(pen);
 
-	for (int i = 0; i < pointsCount; ++i) {
+	//number of points depends on penWidth
+	int points = qMin(pointsCount, penWidth * 5 / 2);
+
+	for (int i = 0; i < points; ++i) {
 		double distance = radius(mersenne);
 		double degr = degree(mersenne);
 
