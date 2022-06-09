@@ -8,15 +8,17 @@ public:
 
 	void setActive(bool activeFlag = true);
 
-	bool isActive() { return _isActive; }
+	bool isActive() const { return _isActive; }
 
 	void setColor(const QColor& newColor);
 
+	const QColor& getColor() const { return mColor; }
+
 signals:
-	void signalActiveColorChanged(const QColor& newColor);
+	void signalActiveColorChanged(const QColor& newColor, bool shouldChangeColorWidget);
 
 public slots:
-	void slotActiveColorChanged(const QColor& newColor);
+	void slotActiveColorChanged(const QColor& newColor, bool shouldChangeColorWidget);
 
 protected:
 	void paintEvent(QPaintEvent* pe) override;

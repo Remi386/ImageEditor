@@ -227,6 +227,8 @@
     <ClInclude Include="InstrumentBase.h" />
     <ClInclude Include="Line.h" />
     <ClInclude Include="Pencil.h" />
+    <QtMoc Include="PenWidthSlider.h" />
+    <QtMoc Include="PenWidthLineEdit.h" />
     <ClInclude Include="Spray.h" />
     <ClInclude Include="stdafx.h" />
     <ClCompile Include="InstrumentBase.cpp" />

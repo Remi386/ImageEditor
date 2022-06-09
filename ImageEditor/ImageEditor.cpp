@@ -8,13 +8,13 @@ ImageEditor::ImageEditor(QWidget *parent)
 
     bool fileActs = true;
 
-    QAction* newFileAct = new QAction("&New file");
+    QAction* newFileAct = new QAction("&New");
     newFileAct->setShortcut(Qt::CTRL + Qt::Key_N);
     fileActs &= (bool)connect(newFileAct, &QAction::triggered, this, &ImageEditor::signalNew);
 
     QAction* open = new QAction("&Open file");
     open->setShortcut(Qt::CTRL + Qt::Key_A);
-    fileActs &= (bool)connect(open, &QAction::triggered, this, &ImageEditor::slotOpen);
+    fileActs &= (bool)connect(open, &QAction::triggered, this, &ImageEditor::signalOpen);
 
     QAction* save = new QAction("&Save");
     save->setShortcut(Qt::CTRL + Qt::Key_S);
@@ -47,52 +47,90 @@ ImageEditor::ImageEditor(QWidget *parent)
     QMenu* editMenu = menuBar()->addMenu("&Edit");
     bool editActs = true;
 
-    undo = new QAction("&Undo");
+    QAction* undo = new QAction("&Undo");
     undo->setShortcut(Qt::CTRL + Qt::Key_Z);
     editActs &= (bool)connect(undo, &QAction::triggered, this, &ImageEditor::signalUndo);
     undo->setEnabled(false);
 
-    redo = new QAction("&Redo");
+    QAction* redo = new QAction("&Redo");
     redo->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z);
     editActs &= (bool)connect(redo, &QAction::triggered, this, &ImageEditor::signalRedo);
     redo->setEnabled(false);
 
+    QAction* swapActiveColor = new QAction("&Swap colors");
+    swapActiveColor->setShortcut(Qt::Key_X);
+
+    QAction* incPenSize = new QAction("&Increase pen size");
+    incPenSize->setShortcut(Qt::CTRL + Qt::Key_Period);
+    editActs &= (bool)connect(incPenSize, &QAction::triggered, 
+                              this, &ImageEditor::signalIncreasePenSize);
+
+    QAction* decPenSize = new QAction("&Decrease pen size");
+    decPenSize->setEnabled(false);
+    decPenSize->setShortcut(Qt::CTRL + Qt::Key_Comma);
+    editActs &= (bool)connect(decPenSize, &QAction::triggered,
+                              this, &ImageEditor::signalDecreasePenSize);
+
     Q_ASSERT(editActs);
 
     editMenu->addAction(undo);
-    fileMenu->addSeparator();
+    editMenu->addSeparator();
     editMenu->addAction(redo);
+    editMenu->addSeparator();
+    editMenu->addAction(swapActiveColor);
+    editMenu->addSeparator();
+    editMenu->addAction(incPenSize);
+    editMenu->addSeparator();
+    editMenu->addAction(decPenSize);
 
     CentralWindow* centralWindow = new CentralWindow;
 
     bool centWind = true;
 
     centWind &= (bool)connect(this, &ImageEditor::signalOpen,
-        centralWindow, &CentralWindow::slotOpenFile);
+                              centralWindow, &CentralWindow::slotOpenFile);
 
     centWind &= (bool)connect(this, &ImageEditor::signalSave,
-        centralWindow, &CentralWindow::slotSave);
+                              centralWindow, &CentralWindow::slotSave);
 
     centWind &= (bool)connect(this, &ImageEditor::signalSaveAs,
-        centralWindow, &CentralWindow::slotSaveAs);
+                              centralWindow, &CentralWindow::slotSaveAs);
 
     centWind &= (bool)connect(centralWindow, &CentralWindow::signalMouseMoved,
-        this, &ImageEditor::slotMouseMoved);
+                              this, &ImageEditor::slotMouseMoved);
 
     centWind &= (bool)connect(this, &ImageEditor::signalUndo,
-        centralWindow, &CentralWindow::slotUndo);
+                              centralWindow, &CentralWindow::slotUndo);
 
     centWind &= (bool)connect(this, &ImageEditor::signalRedo,
-        centralWindow, &CentralWindow::slotRedo);
+                              centralWindow, &CentralWindow::slotRedo);
 
     centWind &= (bool)connect(centralWindow, &CentralWindow::signalRedoStatus,
-        this, &ImageEditor::slotStatusRedoChanged);
+                              redo, &QAction::setEnabled);
 
     centWind &= (bool)connect(centralWindow, &CentralWindow::signalUndoStatus,
-        this, &ImageEditor::slotStatusUndoChanged);
+                              undo, &QAction::setEnabled);
+
+    centWind &= (bool)connect(centralWindow, &CentralWindow::signalMouseLeaved,
+                              this, &ImageEditor::slotMouseLeaved);
 
     centWind &= (bool)connect(this, &ImageEditor::signalNew,
-        centralWindow, &CentralWindow::slotNewFile);
+                              centralWindow, &CentralWindow::slotNewFile);
+
+    centWind &= (bool)connect(swapActiveColor, &QAction::triggered,
+                              centralWindow, &CentralWindow::slotSwapColors);
+
+    centWind &= (bool)connect(this, &ImageEditor::signalIncreasePenSize,
+                              centralWindow, &CentralWindow::slotIncreasePenSize);
+
+    centWind &= (bool)connect(this, &ImageEditor::signalDecreasePenSize,
+                              centralWindow, &CentralWindow::slotDecreasePenSize);
+
+    centWind &= (bool)connect(centralWindow, &CentralWindow::signalIncPenStatus,
+                              incPenSize, &QAction::setEnabled);
+
+    centWind &= (bool)connect(centralWindow, &CentralWindow::signalDecPenStatus,
+                              decPenSize, &QAction::setEnabled);
 
     Q_ASSERT(centWind);
 
@@ -124,32 +162,21 @@ void ImageEditor::slotMouseMoved(QPoint mousePos)
         " , Y = " + QString::number(mousePos.y()));
 }
 
-void ImageEditor::slotOpen()
+void ImageEditor::slotMouseLeaved()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Image"), 
-                                                    "", tr("Image Files (*.png *.jpg *.bmp)"));
-
-    emit signalOpen(fileName);
+    mousePositionLabel->setText("");
 }
 
 void ImageEditor::slotAbout()
 {
-    QMessageBox::about(this, "About Image Editor",
-        "This application was created for educational purposes <br>"
+    QMessageBox::about(this, tr("About Image Editor"),
+        tr("This application was created for educational purposes <br>"
         "You can find the code here: "
         "<a href = \"https://github.com/Remi386/ImageEditor\">Github repository</a> <br>"
-        "All icons are taken from: <a href = \"https://www.flaticon.com/packs/photo-editing\""
+        "Tab icons are taken from: <a href = \"https://www.flaticon.com/packs/photo-editing\""
         "title = \" Icon Pack: Photo editing | Lineal color\">Photo editing icons "
-        "created by Freepik - Flaticon</a>"
-    );
-}
-
-void ImageEditor::slotStatusUndoChanged(bool status)
-{
-    undo->setEnabled(status);
-}
-
-void ImageEditor::slotStatusRedoChanged(bool status)
-{
-    redo->setEnabled(status);
+        "created by Freepik - Flaticon</a> <br>"
+        "Cursor icons taken from: <a href = "
+        "\"https://www.flaticon.com/packs/graphic-design-117?word=photo%20editing\">"
+        "Icon Pack: Graphic Design | Flat, created by justicon - Flaticon</a>"));
 }

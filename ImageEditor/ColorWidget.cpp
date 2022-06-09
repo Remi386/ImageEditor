@@ -4,10 +4,10 @@ namespace {
 	constexpr int BaseWidth = 60;
 	constexpr int BaseHeight = 75;
 	
-	constexpr int recWidth = 40;
-	constexpr int recHeight = 45;
+	constexpr int colorRecWidth = 40;
+	constexpr int colorRecHeight = 45;
 
-	const int approximateCharacterWidth = 5;
+	const int characterWidth = 5;
 }
 
 ColorWidget::ColorWidget(QString _text, QColor defaultColor, QWidget* parent /* = Q_NULLPTR */)
@@ -22,32 +22,32 @@ void ColorWidget::paintEvent(QPaintEvent* pe)
 {
 	QRect rec = pe->rect().adjusted(0, 0, -1, -1);
 
-	if (_isActive) {
-		drawBackground(rec, QColor(0, 130, 250), QColor(60, 175, 255));
+	if (_isActive) { //
+		drawBackground(rec, QColor(90, 90, 90), QColor(50, 80, 90));
 	}
 
 	if (isHovered) {
-		drawBackground(rec, QColor(0, 190, 250, 200), QColor(125, 205, 250, 150));
+		drawBackground(rec, QColor(100, 100, 100, 100), QColor(110, 110, 110, 150));
 	}
 
-	QPoint colorPosition = QPoint((rec.width() - recWidth) / 2,
+	QPoint colorPosition = QPoint((rec.width() - colorRecWidth) / 2,
 								   rec.height() / 5);
 
 	QPainter painter(this);
 	
 	painter.setPen(Qt::gray);
-	painter.drawRect(QRect(colorPosition, QSize(recWidth, recHeight)));
+	painter.drawRect(QRect(colorPosition, QSize(colorRecWidth, colorRecHeight)));
 
 	painter.setPen(Qt::white);
 	painter.drawRect(QRect(colorPosition + QPoint(1, 1), 
-						   QSize(recWidth - 2, recHeight - 2)));
+						   QSize(colorRecWidth - 2, colorRecHeight - 2)));
 
 	painter.setBrush(QBrush(mColor, Qt::SolidPattern));
 	painter.drawRect(QRect(colorPosition + QPoint(2, 2),
-						   QSize(recWidth - 4, recHeight - 4)));
+						   QSize(colorRecWidth - 4, colorRecHeight - 4)));
 
 	painter.setPen(QColor(Qt::black));
-	painter.drawText(rec.width() / 2 - (text.size() / 2) * approximateCharacterWidth,
+	painter.drawText(rec.width() / 2 - (text.size() / 2) * characterWidth,
 					 rec.height() - 3, text);
 
 	QWidget::paintEvent(pe);
@@ -73,8 +73,10 @@ void ColorWidget::mousePressEvent(QMouseEvent* me)
 	if (me->button() == Qt::LeftButton) {
 		_isActive = true;
 		update();
-		emit signalActiveColorChanged(mColor);
 	}
+
+	if(_isActive)
+		emit signalActiveColorChanged(mColor, false);
 }
 
 void ColorWidget::setActive(bool activeFlag /* = true*/)
@@ -107,7 +109,7 @@ void ColorWidget::setColor(const QColor& newColor)
 }
 
 //Receiving this signal from another color widget 
-void ColorWidget::slotActiveColorChanged(const QColor& newColor)
+void ColorWidget::slotActiveColorChanged(const QColor& newColor, bool shouldChangeColorWidget)
 {
 	_isActive = false;
 	update();

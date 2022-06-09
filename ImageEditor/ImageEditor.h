@@ -1,5 +1,7 @@
 #pragma once
-#include <QtWidgets>
+#include <QtWidgets/QMainWindow>
+
+class QLabel;
 
 class ImageEditor : public QMainWindow
 {
@@ -8,9 +10,6 @@ private:
     QString supportedExtensions;
     QLabel* mousePositionLabel;
 
-    QAction* undo;
-    QAction* redo;
-
     bool CloseWindow();
 
 public:
@@ -18,19 +17,18 @@ public:
 
 signals:
     void signalNew();
-    void signalOpen(const QString& fileName);
+    void signalOpen();
     void signalSave();
     void signalSaveAs();
     void signalUndo();
     void signalRedo();
+    void signalIncreasePenSize();
+    void signalDecreasePenSize();
 
 public slots:
-    void slotOpen();
     void slotAbout();
     void slotMouseMoved(QPoint mousePosition);
-
-    void slotStatusUndoChanged(bool status);
-    void slotStatusRedoChanged(bool status);
+    void slotMouseLeaved();
 
 protected:
     void closeEvent(QCloseEvent* ce) override;

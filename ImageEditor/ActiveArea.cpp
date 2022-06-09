@@ -29,18 +29,6 @@ ActiveArea::ActiveArea(QHash<QString, int>& args, int options /* = CreateNewImag
     historyBuffer.addImage(image);
 }
 
-void ActiveArea::enterEvent(QEvent* e)
-{
-    emit signalCursorEntered();
-    QWidget::enterEvent(e);
-}
-
-void ActiveArea::leaveEvent(QEvent* e)
-{
-    emit signalCursorLeaved();
-    QWidget::enterEvent(e);
-}
-
 void ActiveArea::mousePressEvent(QMouseEvent* me)
 {
     if (me->button() == Qt::LeftButton) {
@@ -92,6 +80,12 @@ void ActiveArea::paintEvent(QPaintEvent* pe)
     QWidget::paintEvent(pe);
 }
 
+void ActiveArea::leaveEvent(QEvent* e)
+{
+    emit signalMouseLeaved();
+    QWidget::leaveEvent(e);
+}
+
 //pretty view of file name
 QString ActiveArea::simplifyPath(QString path)
 {
@@ -121,9 +115,17 @@ bool ActiveArea::SaveAs(const QString& supportedExtensions)
                                         QDir::currentPath() + "/" + fileName,
                                         supportedExtensions);
 
+    if (path.isEmpty())
+        return false;
+
     if (image.save(path)) {
         fileName = simplifyPath(path);
         return isPossibleToClose = true;
+    }
+    else {
+        QMessageBox::warning(this,
+            tr("Warning"), tr("Unable to save a file: ") + path
+        );
     }
 
     return false;
@@ -151,6 +153,11 @@ bool ActiveArea::Open(const QString& fName)
     }
 
     return false;
+}
+
+QColor ActiveArea::getPixelColor()
+{
+    return image.pixelColor(arguments["X"], arguments["Y"]);
 }
 
 bool ActiveArea::CloseArea(const QString& supportedExtensions)
@@ -202,7 +209,7 @@ bool ActiveArea::Draw(Instrument* instr, OperationType operType)
 
     case OpStatus::ColorChanged:
         emit signalColorChanged(QColor(arguments["red"], 
-                                arguments["green"], arguments["blue"]));
+                                arguments["green"], arguments["blue"]), true);
         break;
     case OpStatus::InProgress:
         break;

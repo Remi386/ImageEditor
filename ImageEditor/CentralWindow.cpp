@@ -1,6 +1,8 @@
 #include "CentralWindow.h"
 #include "ActiveArea.h"
 #include "ColorWidget.h"
+#include "PenWidthSlider.h"
+#include "PenWidthLineEdit.h"
 #include "Pencil.h"
 #include "Brush.h"
 #include "Eraser.h"
@@ -8,6 +10,8 @@
 #include "Line.h"
 #include "Dropper.h"
 #include "Flood.h"
+
+constexpr int maxPenWidth = 20;
 
 CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/) 
 	:QWidget(parent), tabWidget(new QTabWidget)
@@ -45,24 +49,31 @@ CentralWindow::CentralWindow(QWidget* parent /* = Q_NULLPTR*/)
 	toolBar->addAction(chooseColor);
 
 	toolBar->setMinimumWidth(70);
+	toolBar->setMaximumWidth(100);
 
-	QSlider* penWidthSlider = new QSlider(Qt::Horizontal);
-	penWidthSlider->setRange(1, 20);
-	penWidthSlider->setValue(1);
+	PenWidthSlider* pWidthSlider = new PenWidthSlider(Qt::Horizontal);
+	pWidthSlider->setRange(1, maxPenWidth);
+	pWidthSlider->setValue(1);
+
+	pLineEdit = new PenWidthLineEdit(QString::number(penSize));
+	pLineEdit->setAlignment(Qt::AlignCenter);
+	pLineEdit->setValidator(new QIntValidator(1, maxPenWidth, this));
 	
-	QLabel* penSizeDisplay = new QLabel(QString::number(penSize));
-	penSizeDisplay->setAlignment(Qt::AlignCenter);
+	bool penSizeDisp = true;
+	penSizeDisp &= (bool)connect(pWidthSlider, &PenWidthSlider::valueChanged,
+								 this, &CentralWindow::slotPenSizeChanged);
 
-	bool penOk = true;
-	penOk &= (bool)connect(penWidthSlider, &QSlider::valueChanged, 
-						   this, &CentralWindow::slotPenSizeChanged);
+	penSizeDisp &= (bool)connect(pWidthSlider, &PenWidthSlider::valueChanged,
+								 pLineEdit, &PenWidthLineEdit::setTextFromValue);
 
-	penOk &= (bool)connect(penWidthSlider, &QSlider::valueChanged, 
-						   penSizeDisplay, qOverload<int>(&QLabel::setNum));
+	penSizeDisp &= (bool)connect(pLineEdit, &PenWidthLineEdit::textChanged,
+								 pWidthSlider, &PenWidthSlider::setValueFromString);
 
-	Q_ASSERT(penOk);
-	toolBar->addWidget(penWidthSlider);
-	toolBar->addWidget(penSizeDisplay);
+
+	Q_ASSERT(penSizeDisp);
+
+	toolBar->addWidget(pWidthSlider);
+	toolBar->addWidget(pLineEdit);
 
 	color1 = new ColorWidget("Color 1", Qt::black);
 	color2 = new ColorWidget("Color 2", Qt::white);
@@ -119,8 +130,11 @@ bool CentralWindow::tryToClose()
 	int tabCount = tabWidget->count();
 
 	for (int i = 0; i < tabCount; ++i)
-		if (!closeTab(0))
+		if (closeTab(0)) {
+			tabWidget->removeTab(0);
+		} else {
 			return false;
+		}
 
 	return true;
 }
@@ -171,14 +185,53 @@ void CentralWindow::createInstruments()
 	cursors["Line"] = cursors["Pencil"];
 }
 
-void CentralWindow::slotCursorEnteredArea()
+void CentralWindow::setCursor(ActiveArea* area, bool onMouseMove, bool forceSet/* = false*/)
 {
-	if (activeInstrument->isScalable()) {
-		int cursorSize = qMax(3, penSize);
-		GetActiveArea()->setCursor(activeCursor.scaled(cursorSize, cursorSize));
+	static QColor prevColor = Qt::black;
+	static int cursorSize = 0;
+
+	if (activeInstrument->isScalable())
+	{
+		//Variables for preventing unnecessary cursor copy
+		//If forceSet = true, cursor will change in any way
+		bool colorsSimular = forceSet;
+		bool sizeDiffers = forceSet;
+
+		if (colorDifference(area->getPixelColor(), prevColor) < ColorDifferenceValue * 10) {
+			if (prevColor == Qt::black)
+				prevColor = Qt::white;
+			else
+				prevColor = Qt::black;
+		
+			colorsSimular = true;
+		}
+
+		int newCursorSize = qMax(3, penSize);
+
+		if (cursorSize != newCursorSize || colorsSimular) {
+			cursorSize = newCursorSize;
+			sizeDiffers = true;
+		}
+
+		if (colorsSimular || sizeDiffers) {
+			QPixmap cursorCopy = activeCursor;
+
+			if (colorsSimular) {
+				cursorCopy.fill(prevColor);
+				cursorCopy.setMask(activeCursor.mask());
+			}
+
+			if (sizeDiffers)
+				cursorCopy = cursorCopy.scaled(cursorSize, cursorSize);
+
+			area->setCursor(cursorCopy);
+		}
 	}
-	else
-		GetActiveArea()->setCursor(activeCursor);
+	else if (!onMouseMove) { 
+		// cursor image is static, no need change it in mouse move event
+		area->setCursor(activeCursor);
+		cursorSize = 0;
+	}
 }
 
 void CentralWindow::connectActiveArea(ActiveArea* area)
@@ -203,8 +256,8 @@ void CentralWindow::connectActiveArea(ActiveArea* area)
 	areaCon &= (bool)connect(area, &ActiveArea::signalColorChanged,
 							 this, &CentralWindow::slotColorChanged);
 
-	areaCon &= (bool)connect(area, &ActiveArea::signalCursorEntered,
-							 this, &CentralWindow::slotCursorEnteredArea);
+	areaCon &= (bool)connect(area, &ActiveArea::signalMouseLeaved,
+							 this, &CentralWindow::signalMouseLeaved);
 
 	Q_ASSERT(areaCon);
 }
@@ -235,7 +288,7 @@ void CentralWindow::connectSignals()
 						  this, [this]() {changeInstrument("Flood"); });
 
 	actB &= (bool)connect(chooseColor, &QAction::triggered, 
-						  this, [this]() { slotColorChanged(QColorDialog::getColor()); });
+						  this, [this]() { slotColorChanged(QColorDialog::getColor(), true); });
 
 	actB &= (bool)connect(tabWidget, &QTabWidget::currentChanged,
 						  this, &CentralWindow::slotCurrentWidgetChanged);
@@ -248,14 +301,17 @@ void CentralWindow::connectSignals()
 
 void CentralWindow::getSupportedExtensions()
 {
+	supportedExtensionsOpen += "All image files (";
 	foreach(const QByteArray & format, QImageWriter::supportedImageFormats()) {
 		QString strFormat = QString::fromLatin1(format);
-		supportedExtensions += strFormat.toUpper() + QString(" (*.") + strFormat + QString(");;");
+		supportedExtensionsSave += strFormat.toUpper() + QString(" (*.") + strFormat + QString(");;");
+		supportedExtensionsOpen += "*." + strFormat + " ";
 	};
+	supportedExtensionsOpen += ");; All files (*)";
 
 	//deleting two last characters for correct display
-	int lastIndex = supportedExtensions.size() - 1;
-	supportedExtensions[lastIndex] = supportedExtensions[lastIndex - 1] = ' ';
+	int lastIndex = supportedExtensionsSave.size() - 1;
+	supportedExtensionsSave[lastIndex] = supportedExtensionsSave[lastIndex - 1] = ' ';
 }
 
 void CentralWindow::createNewTab(ActiveArea* actArea)
@@ -278,27 +334,28 @@ void CentralWindow::slotNewFile()
 void CentralWindow::slotSave()
 {
 	ActiveArea* area = GetActiveArea();
-	if (!area->Save(supportedExtensions)) {
-		QMessageBox::warning(this,
-			tr("Warning"), tr("Unable to save a file: ") + area->GetPath()
-		);
+	if (area->Save(supportedExtensionsSave)) {
+		tabWidget->setTabText(tabWidget->currentIndex(), area->GetImageName());
 	}
-	tabWidget->setTabText(tabWidget->currentIndex(), area->GetImageName());
 }
 
 void CentralWindow::slotSaveAs()
 {
 	ActiveArea* area = GetActiveArea();
-	if (!area->SaveAs(supportedExtensions)) {
-		QMessageBox::warning(this,
-			tr("Warning"), tr("Unable to save a file: ") + area->GetPath()
-		);
+	if (area->SaveAs(supportedExtensionsSave)) {
+		tabWidget->setTabText(tabWidget->currentIndex(), area->GetImageName());
 	}
-	tabWidget->setTabText(tabWidget->currentIndex(), area->GetImageName());
 }
 
-void CentralWindow::slotOpenFile(const QString& fileName)
+void CentralWindow::slotOpenFile()
 {
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Open Image"),
+													QDir::currentPath(), 
+													supportedExtensionsOpen);
+
+	if (fileName.isEmpty())
+		return;
+
 	ActiveArea* actArea = new ActiveArea(arguments, ActiveArea::Nothing);
 
 	if (!actArea->Open(fileName)) {
@@ -320,8 +377,12 @@ void CentralWindow::slotMouseMoved(QPoint pos)
 {
 	emit signalMouseMoved(pos);
 
+	ActiveArea* area = GetActiveArea();
+	
+	setCursor(area, true);
+
 	if (isMousePressed)
-		GetActiveArea()->Draw(activeInstrument, OperationType::Move);
+		area->Draw(activeInstrument, OperationType::Move);
 }
 
 void CentralWindow::slotMouseReleased()
@@ -330,22 +391,61 @@ void CentralWindow::slotMouseReleased()
 	GetActiveArea()->Draw(activeInstrument, OperationType::Release);
 }
 
-void CentralWindow::slotColorChanged(const QColor& newColor)
+void CentralWindow::slotColorChanged(const QColor& newColor, bool shouldChangeColorWidget)
 {
 	activeColor = newColor;
 	activeColor.getRgb(&arguments["red"], &arguments["green"], &arguments["blue"]);
 
 	//updating color widget in case color changed by dropper
-	if (color1->isActive())
-		color1->setColor(activeColor);
-	else
-		color2->setColor(activeColor);
+	if (shouldChangeColorWidget) {
+		if (color1->isActive())
+			color1->setColor(activeColor);
+		else
+			color2->setColor(activeColor);
+	}
 }
 
 void CentralWindow::slotPenSizeChanged(int newSize)
 {
 	penSize = newSize;
 	arguments["penSize"] = penSize;
+	
+	if (penSize == maxPenWidth) {
+		isPosToIncPen = false;
+		emit signalIncPenStatus(false);
+	}
+	else if(penSize == 1) {
+		isPosToDecPen = false;
+		emit signalDecPenStatus(false);
+	}
+	else if (!isPosToIncPen) {
+		isPosToIncPen = true;
+		emit signalIncPenStatus(true);
+	}
+	else if (!isPosToDecPen) {
+		isPosToDecPen = true;
+		emit signalDecPenStatus(true);
+	}
+
+	setCursor(GetActiveArea(), false, true);
+}
+
+void CentralWindow::slotIncreasePenSize()
+{
+	if (isPosToIncPen) {
+		int increasedSize = penSize + 1;
+		slotPenSizeChanged(increasedSize);
+		pLineEdit->setTextFromValue(increasedSize);
+	}
+}
+
+void CentralWindow::slotDecreasePenSize()
+{
+	if (isPosToDecPen) {
+		int decreasedSize = penSize - 1;
+		slotPenSizeChanged(decreasedSize);
+		pLineEdit->setTextFromValue(decreasedSize);
+	}
 }
 
 void CentralWindow::changeInstrument(const QString& instName)
@@ -353,6 +453,7 @@ void CentralWindow::changeInstrument(const QString& instName)
 	if (instruments.contains(instName) && cursors.contains(instName)) {
 		activeCursor = cursors[instName];
 		activeInstrument = instruments[instName];
+		setCursor(GetActiveArea(), false, true);
 	}
 	else
 		QMessageBox::critical(this, "ImageEditor", 
@@ -372,7 +473,7 @@ ActiveArea* CentralWindow::GetActiveArea(int index /*= -1*/)
 
 bool CentralWindow::closeTab(int index)
 {
-	return GetActiveArea(index)->CloseArea(supportedExtensions);
+	return GetActiveArea(index)->CloseArea(supportedExtensionsSave);
 }
 
 void CentralWindow::slotCloseRequest(int index)
@@ -391,6 +492,7 @@ void CentralWindow::slotCloseRequest(int index)
 void CentralWindow::slotCurrentWidgetChanged()
 {
 	ActiveArea* area = GetActiveArea();
+	setCursor(area, false, true);
 	auto [isPossibleToRedo, isPossibleToUndo] = area->GetRedoUndoStatus();
 	emit signalRedoStatus(isPossibleToRedo);
 	emit signalUndoStatus(isPossibleToUndo);
@@ -410,4 +512,18 @@ void CentralWindow::slotRedo()
 		emit signalRedoStatus(false);
 	}
 	emit signalUndoStatus(true);
+}
+
+void CentralWindow::slotSwapColors()
+{
+	if (color1->isActive()) {
+		color1->setActive(false);
+		color2->setActive(true);
+		slotColorChanged(color2->getColor(), false);
+	}
+	else {
+		color1->setActive(true);
+		color2->setActive(false);
+		slotColorChanged(color1->getColor(), false);
+	}
 }

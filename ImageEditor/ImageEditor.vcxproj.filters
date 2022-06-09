@@ -102,6 +102,12 @@
     <QtMoc Include="ColorWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="PenWidthSlider.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="PenWidthLineEdit.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InstrumentBase.h">

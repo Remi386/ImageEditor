@@ -5,8 +5,6 @@
 #include <QPainter>
 #include <stack>
 
-constexpr double ColorDifferenceValue = 20.0;
-
 //low cost approximation for finding distance
 // between colors. source: https://www.compuphase.com/cmetric.htm
 double colorDifference(const QColor& color1, const QColor& color2)

@@ -38,6 +38,8 @@ public:
 	std::tuple<bool, bool> GetRedoUndoStatus() 
 		{ return std::make_tuple(isPossibleToRedo, isPossibleToUndo); }
 
+	QColor getPixelColor();
+
 private:
 	QImage image;
 	QString fileName;
@@ -57,15 +59,13 @@ signals:
 	void signalMouseReleased();
 	void signalRedoStatusChanged(bool status);
 	void signalUndoStatusChanged(bool status);
-	void signalColorChanged(const QColor& newColor);
-	void signalCursorEntered();
-	void signalCursorLeaved();
+	void signalColorChanged(const QColor& newColor, bool shouldChangeColorWidget);
+	void signalMouseLeaved();
 
 protected:
 	void mousePressEvent(QMouseEvent* me) override;
 	void mouseMoveEvent(QMouseEvent* me) override;
 	void mouseReleaseEvent(QMouseEvent* me) override;
-	void enterEvent(QEvent* e) override;
-	void leaveEvent(QEvent* e) override;
 	void paintEvent(QPaintEvent* pe) override;
+	void leaveEvent(QEvent* e) override;
 };
